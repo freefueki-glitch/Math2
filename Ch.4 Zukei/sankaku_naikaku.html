@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>三角形の内角・外角</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.6rem, 3.4vw, 2.6rem); margin: 0 0 .8em; text-align:center; flex-shrink:0; }
+.divider{ width:120px; height:2px; margin:1.2em auto; background: repeating-linear-gradient(90deg, var(--chalk-dim) 0 10px, transparent 10px 16px); opacity:.6; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(58vw,700px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .9em; min-width: 260px; max-width: 320px; font-size: clamp(.9rem,1.2vw,1.05rem); }
+.controls label{ color: var(--chalk-dim); font-size:.88em; display:block; margin-bottom:.2em; }
+input[type=range]{ width:100%; accent-color: var(--yellow); }
+.readout{
+  font-family:'Zen Kaku Gothic New',sans-serif; font-weight:900; font-size: clamp(1.1rem,1.9vw,1.4rem);
+  padding: .6em .8em; border: 1.5px dashed var(--rule); border-radius: 14px; text-align:center; line-height:1.7;
+}
+.proof-step{
+  display:flex; align-items:flex-start; gap:.8em; font-size: clamp(.92rem,1.4vw,1.05rem);
+  line-height:1.6; padding:.6em .2em; border-bottom:1px solid var(--rule);
+}
+.stepnum{
+  flex-shrink:0; width:1.7em; height:1.7em; border-radius:50%; background: var(--yellow); color:#20301f;
+  font-weight:900; font-size:.95em; display:flex; align-items:center; justify-content:center;
+}
+.caption{ max-width: 640px; text-align:center; color: var(--chalk-dim); font-size: clamp(.9rem,1.4vw,1.05rem); line-height:1.75; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 700px; text-align:left; font-size: clamp(.95rem,1.5vw,1.12rem); line-height:1.8; margin-bottom:1em;
+}
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:760px; display:flex; flex-direction:column; gap:.7em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(1rem,1.9vw,1.3rem); line-height:1.6; padding: .45em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.typebadge{
+  font-family:'Yomogi',sans-serif; font-size: clamp(1.3rem,2.6vw,1.9rem); text-align:center;
+  padding:.3em .5em; border-radius:12px; transition: color .2s ease;
+}
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 図形の性質</div>
+  <div class="counter"><span id="cnt">1</span> / 6</div>
+
+  <!-- 1: 内角と外角とは -->
+  <section class="slide active">
+    <h2 class="disp">① 内角と外角とは</h2>
+    <div class="definition-box">三角形の1つの頂点で、2つの辺にはさまれた角を<b>内角</b>という。<br>1つの辺を延長してできる、内角ととなり合う角を<b>外角</b>という。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgDef" viewBox="0 0 900 620"></svg>
+    </div>
+    <div class="caption">内角と外角は、一直線上でとなり合っているので、<b>内角＋外角＝180°</b>になる。</div>
+  </section>
+
+  <!-- 2: 内角の性質 -->
+  <section class="slide">
+    <h2 class="disp">② 三角形の内角の性質</h2>
+    <div class="definition-box">三角形の3つの内角の和は、<b>180°</b>である。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgSum" viewBox="0 0 900 620"></svg>
+      <div class="controls">
+        <div><label for="sumBeta">左下の角</label><input type="range" id="sumBeta" min="20" max="130" value="60"></div>
+        <div><label for="sumGamma">右下の角</label><input type="range" id="sumGamma" min="20" max="130" value="60"></div>
+        <div class="readout" id="sumReadout"></div>
+      </div>
+    </div>
+    <div class="caption">形を変えても、3つの内角の和はいつも180°のままであることを確認しよう。</div>
+  </section>
+
+  <!-- 3: 外角の性質 -->
+  <section class="slide">
+    <h2 class="disp">③ 三角形の外角の性質</h2>
+    <div class="definition-box">三角形の1つの外角は、そのとなりにない2つの内角の和に<b>等しい</b>。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgExt" viewBox="0 0 900 620"></svg>
+      <div class="controls">
+        <div><label for="extBeta">左下の角</label><input type="range" id="extBeta" min="20" max="130" value="60"></div>
+        <div><label for="extGamma">右下の角</label><input type="range" id="extGamma" min="20" max="130" value="70"></div>
+        <div class="readout" id="extReadout"></div>
+      </div>
+    </div>
+    <div class="caption">右下の頂点の<span style="color:var(--orange)">外角</span>は、となり合わない<span style="color:var(--cyan)">2つの内角</span>の和と、いつも同じ大きさになる。</div>
+  </section>
+
+  <!-- 4: 外角の性質の証明 -->
+  <section class="slide">
+    <h2 class="disp">④ 外角の性質の証明</h2>
+    <div class="definition-box">外角の性質は、<b>「内角の和は180°」</b>と<b>「一直線上の角の和は180°」</b>の2つから証明できる。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgProof" viewBox="0 0 900 620"></svg>
+      <div class="controls" style="max-width:360px;">
+        <div class="proof-step"><span class="stepnum">1</span><span>三角形の内角の和より<br><b>∠a＋∠b＋∠c＝180°</b></span></div>
+        <div class="proof-step"><span class="stepnum">2</span><span>一直線上の角の和より<br><b>∠c＋外角＝180°</b></span></div>
+        <div class="proof-step"><span class="stepnum">3</span><span>①②はどちらも180°なので<br><b>∠a＋∠b＋∠c＝∠c＋外角</b></span></div>
+        <div class="proof-step"><span class="stepnum">4</span><span>両辺から∠cを引くと<br><b>∠a＋∠b＝外角</b></span></div>
+      </div>
+    </div>
+    <div class="caption">つまり、外角はとなり合わない2つの内角の和に等しいことが証明できた。</div>
+  </section>
+
+  <!-- 5: 三角形の種類 -->
+  <section class="slide">
+    <h2 class="disp">⑤ 三角形の種類</h2>
+    <div class="definition-box">3つの内角がすべて鋭角（90°未満）→ <b>鋭角三角形</b><br>1つの内角が直角（90°）→ <b>直角三角形</b><br>1つの内角が鈍角（90°より大きい）→ <b>鈍角三角形</b></div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgType" viewBox="0 0 900 620"></svg>
+      <div class="controls">
+        <div><label for="typeBeta">左下の角</label><input type="range" id="typeBeta" min="10" max="150" value="60"></div>
+        <div><label for="typeGamma">右下の角</label><input type="range" id="typeGamma" min="10" max="150" value="60"></div>
+        <div class="typebadge" id="typeReadout"></div>
+      </div>
+    </div>
+    <div class="caption">一番大きい角に注目して、鋭角三角形・直角三角形・鈍角三角形のどれになるか確認しよう。</div>
+  </section>
+
+  <!-- 6: まとめ -->
+  <section class="slide">
+    <h2 class="disp">⑥ まとめ</h2>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span><span>内角と外角は一直線上でとなり合い、<b>内角＋外角＝180°</b>。</span></li>
+      <li><span class="mark yellow">◆</span><span>三角形の<b>3つの内角の和は180°</b>。</span></li>
+      <li><span class="mark orange">◆</span><span>三角形の1つの<b>外角</b>は、となり合わない<b>2つの内角の和</b>に等しい（証明済み）。</span></li>
+      <li><span class="mark pink">◆</span><span>角の大きさによって、<b>鋭角三角形</b>（すべての内角が90°未満）・<b>直角三角形</b>（1つの内角が90°）・<b>鈍角三角形</b>（1つの内角が90°より大きい）に分けられる。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+
+<script>
+// ---------- geometry helpers ----------
+function polar(cx, cy, r, deg){ const a = deg * Math.PI / 180; return [cx + r*Math.cos(a), cy + r*Math.sin(a)]; }
+function wedgePath(cx, cy, r, startDeg, endDeg){
+  const [x1,y1] = polar(cx,cy,r,startDeg); const [x2,y2] = polar(cx,cy,r,endDeg);
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
+}
+function labelPoint(cx, cy, r, startDeg, endDeg){ return polar(cx, cy, r, (startDeg+endDeg)/2); }
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(svgns, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function lineSeg(x1,y1,x2,y2, extra){ return el('line', Object.assign({x1,y1,x2,y2, stroke:'var(--chalk)', 'stroke-width':3, 'stroke-linecap':'round'}, extra||{})); }
+
+// Build a triangle from its two base angles (deg), auto-scaled & centered to fit the viewBox.
+function computeTriangle(betaDeg, gammaDeg){
+  const D = 400;
+  const b = betaDeg*Math.PI/180, g = gammaDeg*Math.PI/180;
+  const t = D*Math.sin(g)/Math.sin(b+g);
+  const rawL=[0,0], rawR=[D,0], rawA=[t*Math.cos(b), -t*Math.sin(b)];
+  const targetW=560, targetH=330, cx=450, baseY=500;
+  const xs=[rawL[0],rawR[0],rawA[0]];
+  const w = Math.max(...xs)-Math.min(...xs);
+  const h = -Math.min(rawA[1],0); // apex is the only point above the base (y<0)
+  const scale = Math.min(targetW/Math.max(w,1), targetH/Math.max(h,1));
+  const sx = xs.map(x=>x*scale);
+  const offsetX = cx - (Math.min(...sx)+Math.max(...sx))/2;
+  function place(p){ return [p[0]*scale+offsetX, p[1]*scale+baseY]; }
+  const L=place(rawL), R=place(rawR), A=place(rawA);
+  return { L, R, A, alpha:180-betaDeg-gammaDeg, beta:betaDeg, gamma:gammaDeg };
+}
+// interior angle at vertex V (between rays toward N1 and N2), drawn as a wedge of radius r
+function angleMagnitude(V, N1, N2){
+  const a1 = Math.atan2(N1[1]-V[1], N1[0]-V[0])*180/Math.PI;
+  const a2 = Math.atan2(N2[1]-V[1], N2[0]-V[0])*180/Math.PI;
+  let diff=((a2-a1)%360+360)%360;
+  if(diff>180) diff=360-diff;
+  return diff;
+}
+function angleArc(svg, V, N1, N2, r, color, showLabel){
+  const a1 = Math.atan2(N1[1]-V[1], N1[0]-V[0])*180/Math.PI;
+  const a2 = Math.atan2(N2[1]-V[1], N2[0]-V[0])*180/Math.PI;
+  let start=a1, diff=((a2-a1)%360+360)%360;
+  if(diff>180){ start=a2; diff=360-diff; }
+  const end = start+diff;
+  if(color){
+    svg.appendChild(el('path',{d:wedgePath(V[0],V[1],r,start,end), fill:color, opacity:0.55, stroke:color, 'stroke-width':1.5}));
+  } else {
+    svg.appendChild(el('path',{d:wedgePath(V[0],V[1],r,start,end), fill:'none', stroke:'var(--rule)', 'stroke-width':1.5}));
+  }
+  if(showLabel){
+    const [lx,ly] = labelPoint(V[0],V[1],r+34,start,end);
+    svg.appendChild(el('circle',{cx:lx,cy:ly,r:23,fill:color||'var(--chalk-dim)'}));
+    const t2 = el('text',{x:lx,y:ly,fill:'var(--board)','font-weight':900,'font-size':21,'text-anchor':'middle','dominant-baseline':'middle'});
+    t2.textContent = Math.round(diff)+'°';
+    svg.appendChild(t2);
+  }
+  return diff;
+}
+function drawTriangleOutline(svg, tri, fill){
+  const {L,R,A} = tri;
+  svg.appendChild(el('path',{d:`M ${L[0]} ${L[1]} L ${R[0]} ${R[1]} L ${A[0]} ${A[1]} Z`, fill: fill||'rgba(242,240,230,0.03)', stroke:'var(--chalk)', 'stroke-width':3, 'stroke-linejoin':'round'}));
+}
+function rightAngleMark(svg, V, N1, N2, size){
+  const d1x=N1[0]-V[0], d1y=N1[1]-V[1]; const len1=Math.hypot(d1x,d1y);
+  const d2x=N2[0]-V[0], d2y=N2[1]-V[1]; const len2=Math.hypot(d2x,d2y);
+  const p1=[V[0]+d1x/len1*size, V[1]+d1y/len1*size];
+  const p2=[V[0]+d2x/len2*size, V[1]+d2y/len2*size];
+  const p3=[p1[0]+d2x/len2*size, p1[1]+d2y/len2*size];
+  svg.appendChild(el('path',{d:`M ${p1[0]} ${p1[1]} L ${p3[0]} ${p3[1]} L ${p2[0]} ${p2[1]}`, fill:'none', stroke:'var(--chalk)', 'stroke-width':2}));
+}
+
+// ---------- SLIDE 1: 内角と外角とは (static) ----------
+function renderDef(){
+  const svg = document.getElementById('svgDef');
+  svg.innerHTML = '';
+  const tri = computeTriangle(70,50);
+  drawTriangleOutline(svg, tri);
+  // interior angle at R (cyan)
+  angleArc(svg, tri.R, tri.L, tri.A, 60, 'var(--cyan)', true);
+  // extend base beyond R to form exterior angle
+  const dirx = tri.R[0]-tri.L[0], diry = tri.R[1]-tri.L[1];
+  const len = Math.hypot(dirx,diry);
+  const ext = [tri.R[0]+dirx/len*180, tri.R[1]+diry/len*180];
+  svg.appendChild(lineSeg(tri.R[0],tri.R[1],ext[0],ext[1], {'stroke-dasharray':'2 7'}));
+  angleArc(svg, tri.R, tri.A, ext, 60, 'var(--orange)', true);
+  // vertex dots + labels
+  [['L','A'],['R','B'],['A','C']].forEach(([key,label])=>{
+    const p = tri[key];
+    svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:5,fill:'var(--chalk)'}));
+  });
+  const naikaku = el('text',{x:tri.R[0]-95,y:tri.R[1]-40,fill:'var(--cyan)','font-size':22,'font-weight':700}); naikaku.textContent='内角';
+  const gaikaku = el('text',{x:tri.R[0]+70,y:tri.R[1]-30,fill:'var(--orange)','font-size':22,'font-weight':700}); gaikaku.textContent='外角';
+  svg.appendChild(naikaku); svg.appendChild(gaikaku);
+}
+
+// ---------- SLIDE 2: 内角の和 ----------
+const sumBeta = document.getElementById('sumBeta');
+const sumGamma = document.getElementById('sumGamma');
+const sumReadout = document.getElementById('sumReadout');
+function renderSum(){
+  const svg = document.getElementById('svgSum');
+  svg.innerHTML = '';
+  let beta=+sumBeta.value, gamma=+sumGamma.value;
+  if(beta+gamma>170){ gamma = 170-beta; }
+  const tri = computeTriangle(beta,gamma);
+  drawTriangleOutline(svg, tri);
+  const dA = angleArc(svg, tri.A, tri.L, tri.R, 50, 'var(--yellow)', true);
+  const dL = angleArc(svg, tri.L, tri.A, tri.R, 50, 'var(--cyan)', true);
+  const dR = angleArc(svg, tri.R, tri.L, tri.A, 50, 'var(--pink)', true);
+  sumReadout.innerHTML = `<span style="color:var(--cyan)">${Math.round(dL)}°</span> + <span style="color:var(--pink)">${Math.round(dR)}°</span> + <span style="color:var(--yellow)">${Math.round(dA)}°</span> = ${Math.round(dL+dR+dA)}°`;
+}
+sumBeta.addEventListener('input', renderSum);
+sumGamma.addEventListener('input', renderSum);
+
+// ---------- SLIDE 3: 外角の性質 ----------
+const extBeta = document.getElementById('extBeta');
+const extGamma = document.getElementById('extGamma');
+const extReadout = document.getElementById('extReadout');
+function renderExt(){
+  const svg = document.getElementById('svgExt');
+  svg.innerHTML = '';
+  let beta=+extBeta.value, gamma=+extGamma.value;
+  if(beta+gamma>170){ gamma = 170-beta; }
+  const tri = computeTriangle(beta,gamma);
+  drawTriangleOutline(svg, tri);
+  const dL = angleArc(svg, tri.L, tri.A, tri.R, 50, 'var(--cyan)', true);
+  const dA = angleArc(svg, tri.A, tri.L, tri.R, 50, 'var(--cyan)', true);
+  const dRin = angleArc(svg, tri.R, tri.L, tri.A, 50, null, false);
+  const dirx = tri.R[0]-tri.L[0], diry = tri.R[1]-tri.L[1];
+  const len = Math.hypot(dirx,diry);
+  const ext = [tri.R[0]+dirx/len*180, tri.R[1]+diry/len*180];
+  svg.appendChild(lineSeg(tri.R[0],tri.R[1],ext[0],ext[1], {'stroke-dasharray':'2 7'}));
+  const dExt = angleArc(svg, tri.R, tri.A, ext, 60, 'var(--orange)', true);
+  extReadout.innerHTML = `<span style="color:var(--orange)">外角 ${Math.round(dExt)}°</span> = <span style="color:var(--cyan)">${Math.round(dL)}°+${Math.round(dA)}°</span>`;
+}
+extBeta.addEventListener('input', renderExt);
+extGamma.addEventListener('input', renderExt);
+
+// ---------- SLIDE 4: 外角の性質の証明 (static) ----------
+function renderProof(){
+  const svg = document.getElementById('svgProof');
+  svg.innerHTML = '';
+  const tri = computeTriangle(50,70);
+  drawTriangleOutline(svg, tri);
+  angleArc(svg, tri.L, tri.A, tri.R, 46, 'var(--cyan)', false);
+  angleArc(svg, tri.A, tri.L, tri.R, 46, 'var(--pink)', false);
+  angleArc(svg, tri.R, tri.L, tri.A, 46, 'var(--yellow)', false);
+  const la = el('text',{x:tri.L[0]-8,y:tri.L[1]-58,fill:'var(--cyan)','font-size':24,'font-weight':900}); la.textContent='∠a';
+  const lb = el('text',{x:tri.A[0]-10,y:tri.A[1]-24,fill:'var(--pink)','font-size':24,'font-weight':900}); lb.textContent='∠b';
+  const lc = el('text',{x:tri.R[0]-56,y:tri.R[1]-58,fill:'var(--yellow)','font-size':24,'font-weight':900}); lc.textContent='∠c';
+  svg.appendChild(la); svg.appendChild(lb); svg.appendChild(lc);
+  const dirx = tri.R[0]-tri.L[0], diry = tri.R[1]-tri.L[1];
+  const len = Math.hypot(dirx,diry);
+  const ext = [tri.R[0]+dirx/len*180, tri.R[1]+diry/len*180];
+  svg.appendChild(lineSeg(tri.R[0],tri.R[1],ext[0],ext[1], {'stroke-dasharray':'2 7'}));
+  angleArc(svg, tri.R, tri.A, ext, 60, 'var(--orange)', false);
+  const le = el('text',{x:tri.R[0]+65,y:tri.R[1]-28,fill:'var(--orange)','font-size':24,'font-weight':900}); le.textContent='外角';
+  svg.appendChild(le);
+}
+
+// ---------- SLIDE 5: 三角形の種類 ----------
+const typeBeta = document.getElementById('typeBeta');
+const typeGamma = document.getElementById('typeGamma');
+const typeReadout = document.getElementById('typeReadout');
+function renderType(){
+  const svg = document.getElementById('svgType');
+  svg.innerHTML = '';
+  let beta=+typeBeta.value, gamma=+typeGamma.value;
+  if(beta+gamma>172){ gamma = 172-beta; }
+  const tri = computeTriangle(beta,gamma);
+  const dL = angleMagnitude(tri.L, tri.A, tri.R);
+  const dR = angleMagnitude(tri.R, tri.L, tri.A);
+  const dA = angleMagnitude(tri.A, tri.L, tri.R);
+  const maxAngle = Math.max(dL,dR,dA);
+  let label, color;
+  if(Math.abs(maxAngle-90) < 1.2){ label='直角三角形'; color='var(--yellow)'; }
+  else if(maxAngle>90){ label='鈍角三角形'; color='var(--orange)'; }
+  else { label='鋭角三角形'; color='var(--cyan)'; }
+  drawTriangleOutline(svg, tri);
+  const fillPath = el('path',{d:`M ${tri.L[0]} ${tri.L[1]} L ${tri.R[0]} ${tri.R[1]} L ${tri.A[0]} ${tri.A[1]} Z`, fill:color, opacity:0.28});
+  svg.insertBefore(fillPath, svg.firstChild);
+  angleArc(svg, tri.L, tri.A, tri.R, 46, color, true);
+  angleArc(svg, tri.R, tri.L, tri.A, 46, color, true);
+  angleArc(svg, tri.A, tri.L, tri.R, 46, color, true);
+  if(label==='直角三角形'){
+    const target = Math.abs(dL-90)<1.2 ? tri.L : (Math.abs(dR-90)<1.2 ? tri.R : tri.A);
+    const others = target===tri.L ? [tri.A,tri.R] : (target===tri.R ? [tri.L,tri.A] : [tri.L,tri.R]);
+    rightAngleMark(svg, target, others[0], others[1], 26);
+  }
+  typeReadout.style.color = color;
+  typeReadout.textContent = label;
+}
+typeBeta.addEventListener('input', renderType);
+typeGamma.addEventListener('input', renderType);
+
+// ---------- slide navigation ----------
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+let idx = 0;
+slides.forEach((_,i)=>{ const d = document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d); });
+function show(i){
+  idx = Math.max(0, Math.min(slides.length-1, i));
+  slides.forEach((s,j)=>s.classList.toggle('active', j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
+  document.getElementById('cnt').textContent = idx+1;
+  if(idx===0) renderDef();
+  if(idx===1) renderSum();
+  if(idx===2) renderExt();
+  if(idx===3) renderProof();
+  if(idx===4) renderType();
+}
+document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
+window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+
+renderDef();
+show(0);
+</script>
+</body>
+</html>
