@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>平行線と角</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:center; padding: 3.5vh 5vw 9vh;
+  opacity:0; transition: opacity .35s ease;
+}
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h1.disp{ font-size: clamp(2.6rem, 6vw, 5rem); }
+h2.disp{ font-size: clamp(1.6rem, 3.4vw, 2.6rem); margin-bottom: .25em; text-align:center; }
+.eyebrow{ font-size: clamp(.9rem,1.6vw,1.1rem); letter-spacing:.25em; color: var(--chalk-dim); text-transform:uppercase; margin-bottom:.6em; }
+.subtitle{ font-size: clamp(1.1rem,2.2vw,1.5rem); color: var(--chalk-dim); margin-top:.4em; }
+.divider{ width:120px; height:2px; margin:1.2em auto; background: repeating-linear-gradient(90deg, var(--chalk-dim) 0 10px, transparent 10px 16px); opacity:.6; }
+.card{ max-width: 1180px; width:100%; display:flex; flex-direction:column; align-items:center; gap: .5em; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(58vw,700px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .9em; min-width: 260px; max-width: 320px; font-size: clamp(.9rem,1.2vw,1.05rem); }
+.controls label{ color: var(--chalk-dim); font-size:.88em; display:block; margin-bottom:.2em; }
+input[type=range]{ width:100%; accent-color: var(--yellow); }
+.btn-row{ display:flex; gap:.6em; flex-wrap:wrap; }
+button.tog{
+  font-family:'Zen Kaku Gothic New',sans-serif; font-weight:700; font-size: .92em;
+  padding:.5em 1.05em; border-radius: 999px; border: 1.5px solid var(--chalk-dim);
+  background: transparent; color: var(--chalk); cursor:pointer; transition: all .2s ease;
+}
+button.tog.active{ background: var(--yellow); color:#20301f; border-color: var(--yellow); }
+button.tog.active.orange{ background: var(--orange); border-color: var(--orange); }
+.readout{
+  font-family:'Zen Kaku Gothic New',sans-serif; font-weight:900; font-size: clamp(1.15rem,2vw,1.5rem);
+  padding: .6em .8em; border: 1.5px dashed var(--rule); border-radius: 14px; text-align:center; line-height:1.6;
+}
+.caption{ max-width: 620px; text-align:center; color: var(--chalk-dim); font-size: clamp(.9rem,1.4vw,1.05rem); line-height:1.75; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 700px; text-align:left; font-size: clamp(.95rem,1.5vw,1.12rem); line-height:1.8;
+}
+.definition-box.small{ font-size: clamp(.88rem,1.3vw,1rem); padding:.65em 1.1em; }
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:760px; display:flex; flex-direction:column; gap:.7em; }
+ul.points li{ display:flex; align-items:baseline; gap:.7em; font-size: clamp(1rem,1.9vw,1.3rem); line-height:1.6; padding: .45em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.implyrow{ display:flex; align-items:center; gap:1em; max-width:700px; font-size: clamp(1rem,1.8vw,1.25rem); padding:.7em 1em; border:1px solid var(--rule); border-radius:12px; }
+.implyrow .arrow{ font-size:1.4em; color: var(--yellow); flex-shrink:0; }
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; }
+.badge{ display:inline-block; font-size:.8em; padding:.15em .7em; border-radius:999px; border:1px solid var(--chalk-dim); color:var(--chalk-dim); margin-left:.5em; }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 図形の性質</div>
+  <div class="counter"><span id="cnt">1</span> / 5</div>
+
+  <!-- 1: 対頂角 -->
+  <section class="slide active">
+    <h2 class="disp">① 対頂角（たいちょうかく）</h2>
+    <div class="definition-box">2本の直線が1点で交わるとき、向かい合う2つの角を<b>対頂角</b>という。<br>対頂角は、<b>直線がどんな角度で交わっても、常に等しい</b>。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgTai" viewBox="0 0 1100 600"></svg>
+      <div class="controls">
+        <div><label for="taiRange">直線を回転させる</label><input type="range" id="taiRange" min="15" max="165" value="55"></div>
+        <div class="readout" id="taiReadout"></div>
+      </div>
+    </div>
+    <div class="caption">スライダーを動かして直線を回転させても、<span style="color:var(--cyan)">同じ色の角どうし</span>は常に等しいことを確認しよう。</div>
+  </section>
+
+  <!-- 2: 同位角・錯角（平行線でない場合） -->
+  <section class="slide">
+    <h2 class="disp">② 同位角・錯角<span class="badge">平行線でない場合</span></h2>
+    <div class="definition-box small">2直線 l, m に1直線 n が交わるとき、<b>同じ位置</b>にある角を<b>同位角</b>、内側で<b>反対側</b>にある角を<b>錯角</b>という。<br>l と m が<b>平行でないとき</b>、同位角や錯角は<b>等しいとは限らない</b>。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgNp" viewBox="0 0 1100 600"></svg>
+      <div class="controls">
+        <div><label for="npTheta2">直線 m の傾き</label><input type="range" id="npTheta2" min="10" max="170" value="130"></div>
+        <div><label for="npPhi">直線 n（交わる直線）の傾き</label><input type="range" id="npPhi" min="35" max="145" value="60"></div>
+        <div class="btn-row">
+          <button class="tog active" id="npBtnDoui">同位角</button>
+          <button class="tog" id="npBtnSakkaku">錯角</button>
+        </div>
+        <div class="readout" id="npReadout"></div>
+      </div>
+    </div>
+    <div class="caption" id="npCaption"></div>
+  </section>
+
+  <!-- 3: 同位角・錯角（平行線である場合） -->
+  <section class="slide">
+    <h2 class="disp">③ 同位角・錯角<span class="badge">平行線である場合</span></h2>
+    <div class="definition-box small">直線 l と m が<b>平行(l ∥ m)</b>のとき、同位角は<b>等しい</b>。錯角も<b>等しい</b>。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgPl" viewBox="0 0 1100 600"></svg>
+      <div class="controls">
+        <div><label for="plPhi">直線 n（交わる直線）の傾き</label><input type="range" id="plPhi" min="35" max="145" value="60"></div>
+        <div class="btn-row">
+          <button class="tog active" id="plBtnDoui">同位角</button>
+          <button class="tog" id="plBtnSakkaku">錯角</button>
+        </div>
+        <div class="readout" id="plReadout"></div>
+      </div>
+    </div>
+    <div class="caption">l ∥ m を保ったまま n の傾きを変えても、色をつけた角どうしは常に等しいままであることを確認しよう。</div>
+  </section>
+
+  <!-- 4: 平行線の性質・条件 -->
+  <section class="slide">
+    <h2 class="disp">④ 平行線の性質・平行線になるための条件</h2>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgCond" viewBox="0 0 1100 600" style="width:min(46vw,520px)"></svg>
+      <div style="display:flex; flex-direction:column; gap:.8em; max-width:480px;">
+        <div class="implyrow"><span>l ∥ m</span><span class="arrow">⟹</span><span>同位角・錯角は等しい</span></div>
+        <div class="implyrow"><span>同位角(錯角)が等しい</span><span class="arrow">⟹</span><span>l ∥ m</span></div>
+        <div class="caption" style="text-align:left; max-width:none;">上の2つの矢印は、<b>どちらの向きも成り立つ</b>。つまり「平行ならば角が等しい」だけでなく、「角が等しいとわかれば、平行だと証明できる」ということ。これを使うと、角度を調べるだけで2直線が平行かどうか判断できる。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5: まとめ -->
+  <section class="slide">
+    <h2 class="disp">⑤ まとめ</h2>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span>対頂角は、2直線が交わればいつでも等しい（平行でなくてもよい）。</li>
+      <li><span class="mark yellow">◆</span>2直線が<b>平行でない</b>とき、同位角や錯角は等しいとは限らない。</li>
+      <li><span class="mark orange">◆</span>2直線が<b>平行</b>のとき、同位角・錯角はどちらも等しい。</li>
+      <li><span class="mark pink">◆</span>逆に、同位角や錯角が等しければ、その2直線は<b>平行</b>であるといえる。</li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+
+<script>
+// ---------- geometry helpers ----------
+function polar(cx, cy, r, deg){ const a = deg * Math.PI / 180; return [cx + r*Math.cos(a), cy + r*Math.sin(a)]; }
+function wedgePath(cx, cy, r, startDeg, endDeg){
+  const [x1,y1] = polar(cx,cy,r,startDeg); const [x2,y2] = polar(cx,cy,r,endDeg);
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
+}
+function labelPoint(cx, cy, r, startDeg, endDeg){ return polar(cx, cy, r, (startDeg+endDeg)/2); }
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(svgns, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function lineSeg(x1,y1,x2,y2, extra){ return el('line', Object.assign({x1,y1,x2,y2, stroke:'var(--chalk)', 'stroke-width':3, 'stroke-linecap':'round'}, extra||{})); }
+
+// ---------- SLIDE 1: 対頂角 ----------
+const svgTai = document.getElementById('svgTai');
+const taiRange = document.getElementById('taiRange');
+const taiReadout = document.getElementById('taiReadout');
+function renderTai(phi){
+  svgTai.innerHTML = '';
+  const cx=550, cy=300, R=430, r=78;
+  const [hx1,hy1]=polar(cx,cy,R,0), [hx2,hy2]=polar(cx,cy,R,180);
+  svgTai.appendChild(lineSeg(hx1,hy1,hx2,hy2));
+  const [rx1,ry1]=polar(cx,cy,R,phi), [rx2,ry2]=polar(cx,cy,R,phi+180);
+  svgTai.appendChild(lineSeg(rx1,ry1,rx2,ry2));
+  const regions = [ {s:0,e:phi,color:'var(--cyan)'}, {s:phi,e:180,color:'var(--pink)'}, {s:180,e:180+phi,color:'var(--cyan)'}, {s:180+phi,e:360,color:'var(--pink)'} ];
+  regions.forEach(reg=>{
+    svgTai.appendChild(el('path', {d: wedgePath(cx,cy,r,reg.s,reg.e), fill:reg.color, opacity:0.55, stroke:reg.color, 'stroke-width':1.5}));
+    const [lx,ly] = labelPoint(cx,cy,r+70,reg.s,reg.e);
+    svgTai.appendChild(el('circle', {cx:lx, cy:ly, r:22, fill:reg.color}));
+    const t = el('text', {x:lx, y:ly, fill:'var(--board)', 'font-weight':900, 'font-size':22, 'text-anchor':'middle', 'dominant-baseline':'middle'});
+    t.textContent = Math.round(reg.e-reg.s)+'°';
+    svgTai.appendChild(t);
+  });
+  svgTai.appendChild(el('circle', {cx, cy, r:5, fill:'var(--chalk)'}));
+  const a = Math.round(phi), b = 180-a;
+  taiReadout.innerHTML = `<span style="color:var(--cyan)">∠a = ∠a' = ${a}°</span><br><span style="color:var(--pink)">∠b = ∠b' = ${b}°</span>`;
+}
+taiRange.addEventListener('input', ()=>renderTai(+taiRange.value));
+
+// ---------- shared: two-lines-and-a-transversal diagram ----------
+function drawLineThrough(svg, cx, cy, angleDeg, len){
+  const [x1,y1]=polar(cx,cy,len,angleDeg), [x2,y2]=polar(cx,cy,len,angleDeg+180);
+  svg.appendChild(lineSeg(x1,y1,x2,y2));
+}
+// Split the 4 rays of (line-angle theta, transversal-angle phi) into the 4 angle
+// regions around the vertex, then classify each region by its ACTUAL screen position:
+// upper/lower (relative to that vertex, i.e. which side of the vertex's own line)
+// x right/left (relative to the transversal n). This gives a position-based corner
+// name that stays consistent between P and Q even when the two lines are not parallel.
+function cornerMap(theta, phi){
+  let rays = [theta, theta+180, phi, phi+180].map(a=>((a%360)+360)%360);
+  rays.sort((a,b)=>a-b);
+  const map = {};
+  for(let i=0;i<4;i++){
+    const s = rays[i];
+    const e = i<3 ? rays[i+1] : rays[0]+360;
+    const mid = (s+e)/2;
+    const vert = Math.sin(mid*Math.PI/180) < 0 ? 'upper' : 'lower';
+    const relToPhi = ((mid - phi) % 360 + 360) % 360;
+    const side = relToPhi < 180 ? 'right' : 'left';
+    map[vert+'-'+side] = [s,e];
+  }
+  return map;
+}
+function renderTwoLines(svg, theta1, theta2, phi, mode){
+  svg.innerHTML = '';
+  const Px=550, Py=190, My=430;
+  const dir = phi*Math.PI/180;
+  const t = (My-Py)/Math.sin(dir);
+  const Qx = Px + t*Math.cos(dir), Qy = My;
+
+  drawLineThrough(svg, Px, Py, theta1, 460);
+  drawLineThrough(svg, Qx, Qy, theta2, 460);
+  const ext = 90;
+  const ex1 = Px-(ext/t)*(Qx-Px), ey1 = Py-(ext/t)*(Qy-Py);
+  const ex2 = Qx+(ext/t)*(Qx-Px), ey2 = Qy+(ext/t)*(Qy-Py);
+  svg.appendChild(lineSeg(ex1,ey1,ex2,ey2));
+
+  const rp = { P: cornerMap(theta1,phi), Q: cornerMap(theta2,phi) };
+  const r = 66;
+  ['P','Q'].forEach(v=>{
+    const c = v==='P' ? [Px,Py] : [Qx,Qy];
+    Object.values(rp[v]).forEach(seg=>{
+      svg.appendChild(el('path',{d:wedgePath(c[0],c[1],r,seg[0],seg[1]), fill:'none', stroke:'var(--rule)', 'stroke-width':1.5}));
+    });
+  });
+  // 同位角(corresponding): same corner name at P and Q (here: upper-right at both).
+  // 錯角(alternate, Z-shape): the two INTERIOR corners (P's lower side / Q's upper side)
+  // that sit on OPPOSITE sides of the transversal n.
+  let pairs=[], color='var(--yellow)';
+  if(mode==='doui'){ pairs=[['P','upper-right'],['Q','upper-right']]; color='var(--yellow)'; }
+  else if(mode==='sakkaku'){ pairs=[['P','lower-right'],['Q','upper-left']]; color='var(--orange)'; }
+  const vals=[];
+  pairs.forEach(([v,k])=>{
+    const c = v==='P' ? [Px,Py] : [Qx,Qy];
+    const [s,e] = rp[v][k];
+    svg.appendChild(el('path',{d:wedgePath(c[0],c[1],r,s,e), fill:color, opacity:0.6, stroke:color, 'stroke-width':2}));
+    const [lx,ly] = labelPoint(c[0],c[1],r+40,s,e);
+    svg.appendChild(el('circle',{cx:lx,cy:ly,r:24,fill:color}));
+    const t2 = el('text',{x:lx,y:ly,fill:'var(--board)','font-weight':900,'font-size':22,'text-anchor':'middle','dominant-baseline':'middle'});
+    const mag = Math.round(e-s); t2.textContent = mag+'°'; vals.push(mag);
+    svg.appendChild(t2);
+  });
+  svg.appendChild(el('circle',{cx:Px,cy:Py,r:5,fill:'var(--chalk)'}));
+  svg.appendChild(el('circle',{cx:Qx,cy:Qy,r:5,fill:'var(--chalk)'}));
+  const pL = el('text',{x:Px-34,y:Py-14,fill:'var(--chalk)','font-size':22,'font-weight':700}); pL.textContent='P';
+  const qL = el('text',{x:Qx-34,y:Qy+32,fill:'var(--chalk)','font-size':22,'font-weight':700}); qL.textContent='Q';
+  svg.appendChild(pL); svg.appendChild(qL);
+  const lLabel=el('text',{x:1030,y:Py-14,fill:'var(--chalk-dim)','font-size':22}); lLabel.textContent='l';
+  const mLabel=el('text',{x:1030,y:Qy-14,fill:'var(--chalk-dim)','font-size':22}); mLabel.textContent='m';
+  const nLabel=el('text',{x:ex2+10,y:ey2+18,fill:'var(--chalk-dim)','font-size':22}); nLabel.textContent='n';
+  svg.appendChild(lLabel); svg.appendChild(mLabel); svg.appendChild(nLabel);
+  if(theta1===theta2){
+    const pm=el('text',{x:80,y:Py-14,fill:'var(--chalk-dim)','font-size':20}); pm.textContent='l ∥ m';
+    svg.appendChild(pm);
+  }
+  return vals;
+}
+
+// ---------- SLIDE 2: 同位角・錯角（平行線でない場合） ----------
+const svgNp = document.getElementById('svgNp');
+const npTheta2 = document.getElementById('npTheta2');
+const npPhi = document.getElementById('npPhi');
+const npReadout = document.getElementById('npReadout');
+const npCaption = document.getElementById('npCaption');
+const npBtnDoui = document.getElementById('npBtnDoui');
+const npBtnSakkaku = document.getElementById('npBtnSakkaku');
+let npMode = 'doui';
+function renderNp(){
+  const theta2 = +npTheta2.value, phi = +npPhi.value;
+  const vals = renderTwoLines(svgNp, 0, theta2, phi, npMode);
+  const label = npMode==='doui' ? '同位角' : '錯角';
+  const color = npMode==='doui' ? 'var(--yellow)' : 'var(--orange)';
+  npReadout.innerHTML = `<span style="color:${color}">∠P = ${vals[0]}°　∠Q = ${vals[1]}°</span>`;
+  if(vals[0]===vals[1]){
+    npCaption.textContent = `今はたまたま ${label} が等しくなっているが、l と m は平行ではない。一般には、平行でないとき ${label} は等しくならない。`;
+  } else {
+    npCaption.textContent = `l と m は平行ではないので、${label} は等しくならない（∠P ≠ ∠Q）。`;
+  }
+}
+function setNpMode(mode){
+  npMode = mode;
+  npBtnDoui.classList.toggle('active', mode==='doui');
+  npBtnSakkaku.classList.toggle('active', mode==='sakkaku');
+  npBtnSakkaku.classList.toggle('orange', mode==='sakkaku');
+  renderNp();
+}
+npTheta2.addEventListener('input', renderNp);
+npPhi.addEventListener('input', renderNp);
+npBtnDoui.addEventListener('click', ()=>setNpMode('doui'));
+npBtnSakkaku.addEventListener('click', ()=>setNpMode('sakkaku'));
+
+// ---------- SLIDE 3: 同位角・錯角（平行線である場合） ----------
+const svgPl = document.getElementById('svgPl');
+const plPhi = document.getElementById('plPhi');
+const plReadout = document.getElementById('plReadout');
+const plBtnDoui = document.getElementById('plBtnDoui');
+const plBtnSakkaku = document.getElementById('plBtnSakkaku');
+let plMode = 'doui';
+function renderPl(){
+  const phi = +plPhi.value;
+  const vals = renderTwoLines(svgPl, 0, 0, phi, plMode);
+  const color = plMode==='doui' ? 'var(--yellow)' : 'var(--orange)';
+  plReadout.innerHTML = `<span style="color:${color}">∠P = ∠Q = ${vals[0]}°</span>`;
+}
+function setPlMode(mode){
+  plMode = mode;
+  plBtnDoui.classList.toggle('active', mode==='doui');
+  plBtnSakkaku.classList.toggle('active', mode==='sakkaku');
+  plBtnSakkaku.classList.toggle('orange', mode==='sakkaku');
+  renderPl();
+}
+plPhi.addEventListener('input', renderPl);
+plBtnDoui.addEventListener('click', ()=>setPlMode('doui'));
+plBtnSakkaku.addEventListener('click', ()=>setPlMode('sakkaku'));
+
+// ---------- SLIDE 4: 平行線の性質・条件（固定図） ----------
+const svgCond = document.getElementById('svgCond');
+function renderCond(){ renderTwoLines(svgCond, 0, 0, 55, 'doui'); }
+
+// ---------- SLIDE 6: 練習問題（静的, phi=70）----------
+// ---------- slide navigation ----------
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+let idx = 0;
+slides.forEach((_,i)=>{ const d = document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d); });
+function show(i){
+  idx = Math.max(0, Math.min(slides.length-1, i));
+  slides.forEach((s,j)=>s.classList.toggle('active', j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
+  document.getElementById('cnt').textContent = idx+1;
+  if(idx===0) renderTai(+taiRange.value);
+  if(idx===1) renderNp();
+  if(idx===2) renderPl();
+  if(idx===3) renderCond();
+}
+document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
+window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+
+renderTai(+taiRange.value);
+show(0);
+</script>
+</body>
+</html>
