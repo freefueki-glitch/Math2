@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>三角形の合同条件</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.5rem, 3.2vw, 2.4rem); margin: 0 0 .8em; text-align:center; flex-shrink:0; }
+svg.diagram{ width:min(78vw,820px); height:auto; }
+.caption{ max-width: 720px; text-align:center; color: var(--chalk-dim); font-size: clamp(.9rem,1.4vw,1.05rem); line-height:1.75; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 760px; text-align:left; font-size: clamp(.95rem,1.5vw,1.12rem); line-height:1.8; margin-bottom:1em;
+}
+.legend{ display:flex; gap:1.6em; flex-wrap:wrap; justify-content:center; margin-top:.6em; font-size:.9rem; color:var(--chalk-dim); }
+.legend span.sw{ display:inline-block; width:14px; height:14px; border-radius:3px; margin-right:.4em; vertical-align:-2px; }
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.7em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(1rem,1.8vw,1.25rem); line-height:1.6; padding: .45em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 図形の性質</div>
+  <div class="counter"><span id="cnt">1</span> / 6</div>
+
+  <!-- 1: 合同な図形とは -->
+  <section class="slide active">
+    <h2 class="disp">① 合同な図形とは</h2>
+    <div class="definition-box">合同な図形では、<b>対応する辺の長さ</b>はそれぞれ等しく、<b>対応する角の大きさ</b>もそれぞれ等しい。</div>
+    <svg class="diagram" id="svgIntro" viewBox="0 0 900 560"></svg>
+    <div class="caption">△ABCと△DEFで、同じ印（チェックマーク・弧）と数値がついている辺や角は、それぞれ等しいことを表す。<br>三角形の中をドラッグ＝移動、<span style="color:var(--orange);">↻の点</span>をドラッグ＝回転、<span style="color:var(--cyan);">「反転」ボタン</span>＝裏返し。どれも辺の長さ・角度は変わりません。</div>
+  </section>
+
+  <!-- 2: ≡記号 -->
+  <section class="slide">
+    <h2 class="disp">② 合同を表す記号「≡」</h2>
+    <div class="definition-box">記号「<b>≡</b>」は合同を表す記号。<b>△ABC≡△DEF</b>で「△ABCと△DEFは合同である」という意味になる。三角形だけでなく、四角形など<b>他の図形の合同</b>を表すときにも同じように使う。</div>
+    <svg class="diagram" id="svgSymbol" viewBox="0 0 900 760" style="max-width:1080px; width:min(92vw,1080px);"></svg>
+    <div class="definition-box" style="border-left-color:var(--orange); margin-top:.8em;">⚠ <b>対応する頂点は、同じ順に書く。</b>色が同じ頂点どうしが対応している。△ABC≡△DEFなら、A↔D、B↔E、C↔Fの順に対応させて書く。順番を変えて書くと、どの頂点とどの頂点が対応しているかわからなくなってしまう。</div>
+  </section>
+
+  <!-- 3: 合同条件①SSS -->
+  <section class="slide">
+    <h2 class="disp">③ 合同条件①：3組の辺</h2>
+    <div class="definition-box"><b>3組の辺が、それぞれ等しいとき</b>、2つの三角形は合同である。</div>
+    <svg class="diagram" id="svgSSS" viewBox="0 0 900 560"></svg>
+    <div class="caption">AB＝DE＝5cm、BC＝EF＝4cm、CA＝FD＝6cm → △ABC≡△DEF<br>△DEFを移動・<span style="color:var(--orange);">回転</span>・<span style="color:var(--cyan);">反転</span>させて、△ABCにぴったり重ねてみよう。</div>
+  </section>
+
+  <!-- 3: 合同条件②SAS -->
+  <section class="slide">
+    <h2 class="disp">④ 合同条件②：2組の辺とその間の角</h2>
+    <div class="definition-box"><b>2組の辺とその間の角が、それぞれ等しいとき</b>、2つの三角形は合同である。</div>
+    <svg class="diagram" id="svgSAS" viewBox="0 0 900 560"></svg>
+    <div class="caption">AB＝DE＝6cm、BC＝EF＝4cm、その間の∠B＝∠E＝50° → △ABC≡△DEF<br>△DEFを移動・<span style="color:var(--orange);">回転</span>・<span style="color:var(--cyan);">反転</span>させて、△ABCにぴったり重ねてみよう。</div>
+  </section>
+
+  <!-- 4: 合同条件③ASA -->
+  <section class="slide">
+    <h2 class="disp">⑤ 合同条件③：1組の辺とその両端の角</h2>
+    <div class="definition-box"><b>1組の辺とその両端の角が、それぞれ等しいとき</b>、2つの三角形は合同である。</div>
+    <svg class="diagram" id="svgASA" viewBox="0 0 900 560"></svg>
+    <div class="caption">BC＝EF＝5cm、両端の∠B＝∠E＝50°、∠C＝∠F＝65° → △ABC≡△DEF<br>△DEFを移動・<span style="color:var(--orange);">回転</span>・<span style="color:var(--cyan);">反転</span>させて、△ABCにぴったり重ねてみよう。</div>
+  </section>
+
+  <!-- 5: まとめ -->
+  <section class="slide">
+    <h2 class="disp">⑥ まとめ</h2>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span><span><b>3組の辺</b>が、それぞれ等しいとき</span></li>
+      <li><span class="mark yellow">◆</span><span><b>2組の辺とその間の角</b>が、それぞれ等しいとき</span></li>
+      <li><span class="mark orange">◆</span><span><b>1組の辺とその両端の角</b>が、それぞれ等しいとき</span></li>
+      <li><span class="mark pink">◆</span><span>この3つのどれか1つが成り立てば、2つの三角形は<b>合同</b>であるといえる。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+
+<script>
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(svgns, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function lineSeg(x1,y1,x2,y2, extra){ return el('line', Object.assign({x1,y1,x2,y2, stroke:'var(--chalk)', 'stroke-width':3, 'stroke-linecap':'round'}, extra||{})); }
+function polar(cx,cy,r,deg){ const a=deg*Math.PI/180; return [cx+r*Math.cos(a), cy+r*Math.sin(a)]; }
+function wedgePath(cx,cy,r,startDeg,endDeg){
+  const [x1,y1]=polar(cx,cy,r,startDeg), [x2,y2]=polar(cx,cy,r,endDeg);
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
+}
+
+function toSvgPoint(svg, evt){
+  const pt = svg.createSVGPoint();
+  pt.x = evt.clientX; pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+function updateTransform(g, state){
+  const s = state.flip ? -1 : 1;
+  g.setAttribute('transform', `translate(${state.ox},${state.oy}) rotate(${state.rot},${state.cx},${state.cy}) translate(${state.cx},${state.cy}) scale(${s},1) translate(${-state.cx},${-state.cy})`);
+}
+// Makes a whole <g> (one triangle, shape fixed) draggable as a rigid body — translation only,
+// so side lengths and angles never change, only its position.
+function makeGroupDraggable(svg, g, hitEl, state){
+  hitEl.style.cursor = 'grab';
+  hitEl.style.touchAction = 'none';
+  hitEl.addEventListener('pointerdown', (e)=>{
+    e.preventDefault();
+    hitEl.setPointerCapture(e.pointerId);
+    hitEl.style.cursor = 'grabbing';
+    const p0 = toSvgPoint(svg, e);
+    const startX=p0.x, startY=p0.y, startOx=state.ox, startOy=state.oy;
+    function move(ev){
+      const p = toSvgPoint(svg, ev);
+      state.ox = startOx + (p.x-startX);
+      state.oy = startOy + (p.y-startY);
+      updateTransform(g, state);
+    }
+    function up(){
+      hitEl.style.cursor = 'grab';
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    }
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  });
+}
+// A small handle (with a rotate icon) that spins the triangle around its own centroid,
+// so students can turn it to line up with the other triangle before sliding it into place.
+function makeRotateHandle(svg, g, state, handlePos){
+  const [hx,hy] = handlePos;
+  g.appendChild(lineSeg(state.cx, state.cy, hx, hy, {stroke:'var(--chalk-dim)','stroke-width':1.5,'stroke-dasharray':'3 5'}));
+  const handle = el('circle',{cx:hx,cy:hy,r:14,fill:'var(--orange)',stroke:'var(--board)','stroke-width':2, style:'cursor:grab;touch-action:none;'});
+  g.appendChild(handle);
+  const icon = el('text',{x:hx,y:hy+1,fill:'var(--board)','font-size':16,'font-weight':900,'text-anchor':'middle','dominant-baseline':'middle','pointer-events':'none'});
+  icon.textContent = '↻';
+  g.appendChild(icon);
+  handle.addEventListener('pointerdown', (e)=>{
+    e.preventDefault(); e.stopPropagation();
+    handle.setPointerCapture(e.pointerId);
+    handle.style.cursor = 'grabbing';
+    const centerScreen = [state.ox+state.cx, state.oy+state.cy];
+    const p0 = toSvgPoint(svg, e);
+    const startAngle = Math.atan2(p0.y-centerScreen[1], p0.x-centerScreen[0])*180/Math.PI;
+    const startRot = state.rot;
+    function move(ev){
+      const p = toSvgPoint(svg, ev);
+      const curAngle = Math.atan2(p.y-centerScreen[1], p.x-centerScreen[0])*180/Math.PI;
+      state.rot = startRot + (curAngle-startAngle);
+      updateTransform(g, state);
+    }
+    function up(){
+      handle.style.cursor = 'grab';
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    }
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  });
+}
+// A fixed button (outside the rotating/moving group, so it never flips or spins itself)
+// that mirrors the triangle left-right around its own centroid.
+function makeFlipButton(svgEl, g, state, x, y, label){
+  const w=118, h=32;
+  const rect = el('rect',{x:x-w/2, y:y-h/2, width:w, height:h, rx:8, fill:'var(--cyan)', stroke:'var(--board)', 'stroke-width':2, style:'cursor:pointer;'});
+  svgEl.appendChild(rect);
+  const t = el('text',{x, y:y+1, fill:'var(--board)','font-size':14,'font-weight':900,'text-anchor':'middle','dominant-baseline':'middle','pointer-events':'none'});
+  t.textContent = label;
+  svgEl.appendChild(t);
+  rect.addEventListener('click', ()=>{
+    state.flip = !state.flip;
+    updateTransform(g, state);
+  });
+}
+function drawTriangle(g, pts, names, namePos){
+  const [A,B,C] = pts;
+  g.appendChild(el('path',{d:`M ${A[0]} ${A[1]} L ${B[0]} ${B[1]} L ${C[0]} ${C[1]} Z`, fill:'rgba(242,240,230,0.05)', stroke:'var(--chalk)', 'stroke-width':3, 'stroke-linejoin':'round'}));
+  pts.forEach((p,i)=>{
+    g.appendChild(el('circle',{cx:p[0],cy:p[1],r:5,fill:'var(--chalk)'}));
+    const [lx,ly] = namePos[i];
+    const t = el('text',{x:lx,y:ly,fill:'var(--chalk)','font-size':24,'font-weight':700,'text-anchor':'middle'});
+    t.textContent = names[i];
+    g.appendChild(t);
+  });
+  // invisible larger hit-area so the triangle can be grabbed anywhere inside it, regardless of fill opacity
+  const hit = el('path',{d:`M ${A[0]} ${A[1]} L ${B[0]} ${B[1]} L ${C[0]} ${C[1]} Z`, fill:'#000', opacity:0});
+  g.appendChild(hit);
+  return hit;
+}
+function tickMarks(g, p1, p2, count, color){
+  const mx=(p1[0]+p2[0])/2, my=(p1[1]+p2[1])/2;
+  const dx=p2[0]-p1[0], dy=p2[1]-p1[1];
+  const len=Math.hypot(dx,dy);
+  const ux=dx/len, uy=dy/len, px=-uy, py=ux;
+  const spacing=8, tickLen=16;
+  const total=(count-1)*spacing;
+  for(let i=0;i<count;i++){
+    const off = -total/2 + i*spacing;
+    const cx=mx+ux*off, cy=my+uy*off;
+    const x1=cx+px*tickLen/2, y1=cy+py*tickLen/2;
+    const x2=cx-px*tickLen/2, y2=cy-py*tickLen/2;
+    g.appendChild(lineSeg(x1,y1,x2,y2,{stroke:color,'stroke-width':3}));
+  }
+}
+// numeric label for a side, offset to the outside of the triangle (away from centroid)
+function sideValueLabel(g, p1, p2, centroid, text, color){
+  const mx=(p1[0]+p2[0])/2, my=(p1[1]+p2[1])/2;
+  let nx = mx-centroid[0], ny = my-centroid[1];
+  const len = Math.hypot(nx,ny)||1;
+  nx/=len; ny/=len;
+  const lx = mx + nx*26, ly = my + ny*26;
+  const t = el('text',{x:lx,y:ly,fill:color,'font-size':19,'font-weight':900,'text-anchor':'middle','dominant-baseline':'middle'});
+  t.textContent = text;
+  g.appendChild(t);
+}
+function markAngle(g, V, N1, N2, r, color, valueText){
+  const a1=Math.atan2(N1[1]-V[1],N1[0]-V[0])*180/Math.PI;
+  const a2=Math.atan2(N2[1]-V[1],N2[0]-V[0])*180/Math.PI;
+  let start=a1, diff=((a2-a1)%360+360)%360;
+  if(diff>180){ start=a2; diff=360-diff; }
+  const end=start+diff;
+  g.appendChild(el('path',{d:wedgePath(V[0],V[1],r,start,end), fill:color, opacity:0.55, stroke:color, 'stroke-width':2}));
+  if(valueText){
+    const mid=(start+end)/2, lr=r+28;
+    const lx = V[0]+lr*Math.cos(mid*Math.PI/180), ly = V[1]+lr*Math.sin(mid*Math.PI/180);
+    const t = el('text',{x:lx,y:ly,fill:color,'font-size':18,'font-weight':900,'text-anchor':'middle','dominant-baseline':'middle'});
+    t.textContent = valueText;
+    g.appendChild(t);
+  }
+}
+function centroidOf(pts){ return [ (pts[0][0]+pts[1][0]+pts[2][0])/3, (pts[0][1]+pts[1][1]+pts[2][1])/3 ]; }
+
+// Fixed local shapes (schematic, not-to-scale) — dragging moves the whole triangle only, shape never changes.
+const T1 = { A:[130,470], B:[380,470], C:[210,270] };
+const T2 = { D:[710.6,215.1], E:[533.9,391.9], F:[795.5,413.1] };
+
+function setupTriangle(svgEl, pts, keys, names, namePos, handlePos, flipBtnPos, flipLabel){
+  const ptsArr = keys.map(k=>pts[k]);
+  const [cx,cy] = centroidOf(ptsArr);
+  const state = { ox:0, oy:0, rot:0, flip:false, cx, cy };
+  const g = el('g', {});
+  updateTransform(g, state);
+  svgEl.appendChild(g);
+  const hit = drawTriangle(g, ptsArr, names, namePos);
+  makeGroupDraggable(svgEl, g, hit, state);
+  makeRotateHandle(svgEl, g, state, handlePos);
+  makeFlipButton(svgEl, g, state, flipBtnPos[0], flipBtnPos[1], flipLabel);
+  return g;
+}
+
+function renderIntro(){
+  const svgEl = document.getElementById('svgIntro');
+  svgEl.innerHTML = '';
+  const g1 = setupTriangle(svgEl, T1, ['A','B','C'], ['A','B','C'], [[T1.A[0]-26,T1.A[1]+10],[T1.B[0]+26,T1.B[1]+10],[T1.C[0],T1.C[1]-20]], [240,150], [255,40], '△ABC 反転');
+  const g2 = setupTriangle(svgEl, T2, ['D','E','F'], ['D','E','F'], [[T2.D[0]-8,T2.D[1]-22],[T2.E[0]+26,T2.E[1]+4],[T2.F[0]+10,T2.F[1]+30]], [680,120], [700,40], '△DEF 反転');
+  const c1 = centroidOf([T1.A,T1.B,T1.C]), c2 = centroidOf([T2.D,T2.E,T2.F]);
+  tickMarks(g1, T1.A, T1.B, 1, 'var(--cyan)');   tickMarks(g2, T2.D, T2.E, 1, 'var(--cyan)');
+  tickMarks(g1, T1.B, T1.C, 2, 'var(--yellow)'); tickMarks(g2, T2.E, T2.F, 2, 'var(--yellow)');
+  tickMarks(g1, T1.C, T1.A, 3, 'var(--pink)');   tickMarks(g2, T2.F, T2.D, 3, 'var(--pink)');
+  sideValueLabel(g1, T1.A, T1.B, c1, '5cm', 'var(--cyan)');   sideValueLabel(g2, T2.D, T2.E, c2, '5cm', 'var(--cyan)');
+  sideValueLabel(g1, T1.B, T1.C, c1, '6cm', 'var(--yellow)'); sideValueLabel(g2, T2.E, T2.F, c2, '6cm', 'var(--yellow)');
+  sideValueLabel(g1, T1.C, T1.A, c1, '7cm', 'var(--pink)');   sideValueLabel(g2, T2.F, T2.D, c2, '7cm', 'var(--pink)');
+  markAngle(g1, T1.A, T1.B, T1.C, 34, 'var(--orange)', '57°'); markAngle(g2, T2.D, T2.E, T2.F, 34, 'var(--orange)', '57°');
+  markAngle(g1, T1.B, T1.A, T1.C, 34, 'var(--cyan)', '78°');   markAngle(g2, T2.E, T2.D, T2.F, 34, 'var(--cyan)', '78°');
+  markAngle(g1, T1.C, T1.A, T1.B, 34, 'var(--pink)', '45°');   markAngle(g2, T2.F, T2.D, T2.E, 34, 'var(--pink)', '45°');
+}
+
+function renderSymbol(){
+  const svg = document.getElementById('svgSymbol');
+  svg.innerHTML = '';
+  const vcolors = ['var(--cyan)','var(--yellow)','var(--pink)','var(--orange)'];
+
+  function shape(pts, names, colorOffset){
+    const d = pts.map((p,i)=> (i===0?'M':'L')+' '+p[0]+' '+p[1]).join(' ')+' Z';
+    svg.appendChild(el('path',{d, fill:'rgba(242,240,230,0.06)', stroke:'var(--chalk)', 'stroke-width':3, 'stroke-linejoin':'round'}));
+    pts.forEach((p,i)=>{
+      const color = vcolors[(i+colorOffset)%vcolors.length];
+      svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:9,fill:color,stroke:'var(--board)','stroke-width':2}));
+    });
+  }
+  function labels(pts, names, namePos, colorOffset){
+    pts.forEach((p,i)=>{
+      const color = vcolors[(i+colorOffset)%vcolors.length];
+      const [lx,ly] = namePos[i];
+      const t = el('text',{x:lx,y:ly,fill:color,'font-size':24,'font-weight':900,'text-anchor':'middle'});
+      t.textContent = names[i];
+      svg.appendChild(t);
+    });
+  }
+
+  // ---- row 1: triangles ----
+  const tA=[90,220], tB=[250,220], tC=[170,80];
+  const tD=[560,220], tE=[720,220], tF=[640,80];
+  shape([tA,tB,tC], null, 0);
+  shape([tD,tE,tF], null, 0);
+  labels([tA,tB,tC], ['A','B','C'], [[tA[0]-28,tA[1]+8],[tB[0]+28,tB[1]+8],[tC[0],tC[1]-22]], 0);
+  labels([tD,tE,tF], ['D','E','F'], [[tD[0]-28,tD[1]+8],[tE[0]+28,tE[1]+8],[tF[0],tF[1]-22]], 0);
+  const eq1 = el('text',{x:405,y:170,fill:'var(--chalk)','font-size':44,'font-weight':900,'text-anchor':'middle'}); eq1.textContent='≡';
+  svg.appendChild(eq1);
+  const cap1 = el('text',{x:405,y:310,fill:'var(--chalk)','font-size':76,'font-weight':900,'text-anchor':'middle'}); cap1.textContent='△ABC ≡ △DEF';
+  svg.appendChild(cap1);
+
+  // ---- row 2: quadrilaterals (second one rotated, to show order matters, not orientation) ----
+  const qA=[70,630],qB=[290,630],qC=[290,490],qD=[140,490];
+  const qE=[617.8,386.2],qF=[542.6,593.0],qG=[674.1,640.9],qH=[725.4,499.9];
+  shape([qA,qB,qC,qD], null, 0);
+  shape([qE,qF,qG,qH], null, 0);
+  labels([qA,qB,qC,qD], ['A','B','C','D'], [[qA[0]-26,qA[1]+22],[qB[0]+26,qB[1]+22],[qC[0]+26,qC[1]-16],[qD[0]-26,qD[1]-16]], 0);
+  labels([qE,qF,qG,qH], ['F','G','D','E'], [[qE[0]-8,qE[1]-24],[qF[0]-32,qF[1]+10],[qG[0]+10,qG[1]+16],[qH[0]+32,qH[1]-8]], 0);
+  const eq2 = el('text',{x:405,y:560,fill:'var(--chalk)','font-size':44,'font-weight':900,'text-anchor':'middle'}); eq2.textContent='≡';
+  svg.appendChild(eq2);
+  const cap2 = el('text',{x:405,y:730,fill:'var(--chalk)','font-size':58,'font-weight':900,'text-anchor':'middle'}); cap2.textContent='四角形ABCD ≡ 四角形FGDE';
+  svg.appendChild(cap2);
+}
+
+function renderSSS(){
+  const svgEl = document.getElementById('svgSSS');
+  svgEl.innerHTML = '';
+  const g1 = setupTriangle(svgEl, T1, ['A','B','C'], ['A','B','C'], [[T1.A[0]-26,T1.A[1]+10],[T1.B[0]+26,T1.B[1]+10],[T1.C[0],T1.C[1]-20]], [240,150], [255,40], '△ABC 反転');
+  const g2 = setupTriangle(svgEl, T2, ['D','E','F'], ['D','E','F'], [[T2.D[0]-8,T2.D[1]-22],[T2.E[0]+26,T2.E[1]+4],[T2.F[0]+10,T2.F[1]+30]], [680,120], [700,40], '△DEF 反転');
+  const c1 = centroidOf([T1.A,T1.B,T1.C]), c2 = centroidOf([T2.D,T2.E,T2.F]);
+  tickMarks(g1, T1.A, T1.B, 1, 'var(--cyan)');   tickMarks(g2, T2.D, T2.E, 1, 'var(--cyan)');
+  tickMarks(g1, T1.B, T1.C, 2, 'var(--yellow)'); tickMarks(g2, T2.E, T2.F, 2, 'var(--yellow)');
+  tickMarks(g1, T1.C, T1.A, 3, 'var(--pink)');   tickMarks(g2, T2.F, T2.D, 3, 'var(--pink)');
+  sideValueLabel(g1, T1.A, T1.B, c1, '5cm', 'var(--cyan)');   sideValueLabel(g2, T2.D, T2.E, c2, '5cm', 'var(--cyan)');
+  sideValueLabel(g1, T1.B, T1.C, c1, '4cm', 'var(--yellow)'); sideValueLabel(g2, T2.E, T2.F, c2, '4cm', 'var(--yellow)');
+  sideValueLabel(g1, T1.C, T1.A, c1, '6cm', 'var(--pink)');   sideValueLabel(g2, T2.F, T2.D, c2, '6cm', 'var(--pink)');
+}
+
+function renderSAS(){
+  const svgEl = document.getElementById('svgSAS');
+  svgEl.innerHTML = '';
+  const g1 = setupTriangle(svgEl, T1, ['A','B','C'], ['A','B','C'], [[T1.A[0]-26,T1.A[1]+10],[T1.B[0]+26,T1.B[1]+10],[T1.C[0],T1.C[1]-20]], [240,150], [255,40], '△ABC 反転');
+  const g2 = setupTriangle(svgEl, T2, ['D','E','F'], ['D','E','F'], [[T2.D[0]-8,T2.D[1]-22],[T2.E[0]+26,T2.E[1]+4],[T2.F[0]+10,T2.F[1]+30]], [680,120], [700,40], '△DEF 反転');
+  const c1 = centroidOf([T1.A,T1.B,T1.C]), c2 = centroidOf([T2.D,T2.E,T2.F]);
+  tickMarks(g1, T1.A, T1.B, 1, 'var(--cyan)');   tickMarks(g2, T2.D, T2.E, 1, 'var(--cyan)');
+  tickMarks(g1, T1.B, T1.C, 2, 'var(--yellow)'); tickMarks(g2, T2.E, T2.F, 2, 'var(--yellow)');
+  sideValueLabel(g1, T1.A, T1.B, c1, '6cm', 'var(--cyan)');   sideValueLabel(g2, T2.D, T2.E, c2, '6cm', 'var(--cyan)');
+  sideValueLabel(g1, T1.B, T1.C, c1, '4cm', 'var(--yellow)'); sideValueLabel(g2, T2.E, T2.F, c2, '4cm', 'var(--yellow)');
+  markAngle(g1, T1.B, T1.A, T1.C, 40, 'var(--orange)', '50°');
+  markAngle(g2, T2.E, T2.D, T2.F, 40, 'var(--orange)', '50°');
+}
+
+function renderASA(){
+  const svgEl = document.getElementById('svgASA');
+  svgEl.innerHTML = '';
+  const g1 = setupTriangle(svgEl, T1, ['A','B','C'], ['A','B','C'], [[T1.A[0]-26,T1.A[1]+10],[T1.B[0]+26,T1.B[1]+10],[T1.C[0],T1.C[1]-20]], [240,150], [255,40], '△ABC 反転');
+  const g2 = setupTriangle(svgEl, T2, ['D','E','F'], ['D','E','F'], [[T2.D[0]-8,T2.D[1]-22],[T2.E[0]+26,T2.E[1]+4],[T2.F[0]+10,T2.F[1]+30]], [680,120], [700,40], '△DEF 反転');
+  const c1 = centroidOf([T1.A,T1.B,T1.C]), c2 = centroidOf([T2.D,T2.E,T2.F]);
+  tickMarks(g1, T1.B, T1.C, 1, 'var(--yellow)'); tickMarks(g2, T2.E, T2.F, 1, 'var(--yellow)');
+  sideValueLabel(g1, T1.B, T1.C, c1, '5cm', 'var(--yellow)'); sideValueLabel(g2, T2.E, T2.F, c2, '5cm', 'var(--yellow)');
+  markAngle(g1, T1.B, T1.A, T1.C, 40, 'var(--cyan)', '50°');
+  markAngle(g2, T2.E, T2.D, T2.F, 40, 'var(--cyan)', '50°');
+  markAngle(g1, T1.C, T1.A, T1.B, 40, 'var(--pink)', '65°');
+  markAngle(g2, T2.F, T2.D, T2.E, 40, 'var(--pink)', '65°');
+}
+
+// ---------- slide navigation ----------
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+let idx = 0;
+slides.forEach((_,i)=>{ const d = document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d); });
+function show(i){
+  idx = Math.max(0, Math.min(slides.length-1, i));
+  slides.forEach((s,j)=>s.classList.toggle('active', j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
+  document.getElementById('cnt').textContent = idx+1;
+  if(idx===0) renderIntro();
+  if(idx===1) renderSymbol();
+  if(idx===2) renderSSS();
+  if(idx===3) renderSAS();
+  if(idx===4) renderASA();
+}
+document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
+window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+
+renderIntro();
+show(0);
+</script>
+</body>
+</html>

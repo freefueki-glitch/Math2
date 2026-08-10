@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>多角形の内角の和・外角の和</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.5rem, 3.2vw, 2.4rem); margin: 0 0 .8em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(56vw,660px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .9em; min-width: 260px; max-width: 330px; font-size: clamp(.9rem,1.2vw,1.05rem); }
+.controls label{ color: var(--chalk-dim); font-size:.88em; display:block; margin-bottom:.2em; }
+input[type=range]{ width:100%; accent-color: var(--yellow); }
+.readout{
+  font-family:'Zen Kaku Gothic New',sans-serif; font-weight:900; font-size: clamp(1.05rem,1.8vw,1.35rem);
+  padding: .6em .8em; border: 1.5px dashed var(--rule); border-radius: 14px; text-align:center; line-height:1.7;
+}
+.proof-step{
+  display:flex; align-items:flex-start; gap:.8em; font-size: clamp(.92rem,1.4vw,1.05rem);
+  line-height:1.6; padding:.6em .2em; border-bottom:1px solid var(--rule);
+}
+.stepnum{
+  flex-shrink:0; width:1.7em; height:1.7em; border-radius:50%; background: var(--yellow); color:#20301f;
+  font-weight:900; font-size:.95em; display:flex; align-items:center; justify-content:center;
+}
+.caption{ max-width: 640px; text-align:center; color: var(--chalk-dim); font-size: clamp(.9rem,1.4vw,1.05rem); line-height:1.75; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 700px; text-align:left; font-size: clamp(.95rem,1.5vw,1.12rem); line-height:1.8; margin-bottom:1em;
+}
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:760px; display:flex; flex-direction:column; gap:.7em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(1rem,1.9vw,1.3rem); line-height:1.6; padding: .45em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 図形の性質</div>
+  <div class="counter"><span id="cnt">1</span> / 5</div>
+
+  <!-- 1: 内角の和の考え方 -->
+  <section class="slide active">
+    <h2 class="disp">① 多角形の内角の和の考え方</h2>
+    <div class="definition-box">多角形は、1つの頂点からすべての対角線を引くと、いくつかの三角形に分けられる。<br>三角形の内角の和は180°なので、三角形の個数がわかれば多角形の内角の和がわかる。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgIdea" viewBox="0 0 900 620"></svg>
+    </div>
+    <div class="caption" id="ideaCaption"></div>
+  </section>
+
+  <!-- 2: 内角の和の公式 -->
+  <section class="slide">
+    <h2 class="disp">② 内角の和の公式</h2>
+    <div class="definition-box">n角形の内角の和は、<b>180×(n−2)</b>で求められる。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgSum" viewBox="0 0 900 620"></svg>
+      <div class="controls">
+        <div><label for="sumN">頂点の数（n）</label><input type="range" id="sumN" min="3" max="10" value="5"></div>
+        <div class="readout" id="sumReadout"></div>
+      </div>
+    </div>
+    <div class="caption">頂点の数を変えると、三角形の個数も内角の和も変わることを確認しよう。</div>
+  </section>
+
+  <!-- 3: 外角の和が360°になる証明 -->
+  <section class="slide">
+    <h2 class="disp">③ 外角の和が360°になる証明</h2>
+    <div class="definition-box">外角の和が360°になることは、<b>「内角の和の公式」</b>と<b>「内角＋外角＝180°」</b>の2つから証明できる。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgProof" viewBox="0 0 900 620"></svg>
+      <div class="controls" style="max-width:360px;">
+        <div class="proof-step"><span class="stepnum">1</span><span>どの頂点でも、一直線上の角より<br><b>内角＋外角＝180°</b></span></div>
+        <div class="proof-step"><span class="stepnum">2</span><span>これがn個の頂点すべてで成り立つので<br><b>内角の和＋外角の和＝180×n</b></span></div>
+        <div class="proof-step"><span class="stepnum">3</span><span>内角の和は180×(n−2)なので<br><b>外角の和＝180×n−180×(n−2)</b></span></div>
+        <div class="proof-step"><span class="stepnum">4</span><span>右辺を計算すると<br><b>＝180n−180n＋360＝360°</b></span></div>
+      </div>
+    </div>
+    <div class="caption">nがどんな数でも消えてしまうので、外角の和はいつも360°になる。</div>
+  </section>
+
+  <!-- 4: 外角の和 -->
+  <section class="slide">
+    <h2 class="disp">④ 多角形の外角の和</h2>
+    <div class="definition-box">多角形の外角の和は、頂点の数に関係なく、常に<b>360°</b>である。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgExt" viewBox="0 0 900 620"></svg>
+      <div class="controls">
+        <div><label for="extN">頂点の数（n）</label><input type="range" id="extN" min="3" max="10" value="5"></div>
+        <div class="readout" id="extReadout"></div>
+      </div>
+    </div>
+    <div class="caption">頂点の数を変えても、外角をすべてたすといつも360°になることを確認しよう。</div>
+  </section>
+
+  <!-- 5: まとめ -->
+  <section class="slide">
+    <h2 class="disp">⑤ まとめ</h2>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span><span>多角形は、1つの頂点から対角線を引くと<b>(n−2)個の三角形</b>に分けられる。</span></li>
+      <li><span class="mark yellow">◆</span><span>n角形の<b>内角の和</b>は、<b>180×(n−2)</b>で求められる。</span></li>
+      <li><span class="mark orange">◆</span><span>多角形の<b>外角の和</b>は、頂点の数に関係なく<b>いつも360°</b>（証明済み）。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+
+<script>
+// ---------- geometry helpers ----------
+function polar(cx, cy, r, deg){ const a = deg * Math.PI / 180; return [cx + r*Math.cos(a), cy + r*Math.sin(a)]; }
+function wedgePath(cx, cy, r, startDeg, endDeg){
+  const [x1,y1] = polar(cx,cy,r,startDeg); const [x2,y2] = polar(cx,cy,r,endDeg);
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
+}
+function labelPoint(cx, cy, r, startDeg, endDeg){ return polar(cx, cy, r, (startDeg+endDeg)/2); }
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(svgns, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function lineSeg(x1,y1,x2,y2, extra){ return el('line', Object.assign({x1,y1,x2,y2, stroke:'var(--chalk)', 'stroke-width':3, 'stroke-linecap':'round'}, extra||{})); }
+function angleMagnitude(V, N1, N2){
+  const a1 = Math.atan2(N1[1]-V[1], N1[0]-V[0])*180/Math.PI;
+  const a2 = Math.atan2(N2[1]-V[1], N2[0]-V[0])*180/Math.PI;
+  let diff=((a2-a1)%360+360)%360;
+  if(diff>180) diff=360-diff;
+  return diff;
+}
+function angleArc(svg, V, N1, N2, r, color, showLabel){
+  const a1 = Math.atan2(N1[1]-V[1], N1[0]-V[0])*180/Math.PI;
+  const a2 = Math.atan2(N2[1]-V[1], N2[0]-V[0])*180/Math.PI;
+  let start=a1, diff=((a2-a1)%360+360)%360;
+  if(diff>180){ start=a2; diff=360-diff; }
+  const end = start+diff;
+  svg.appendChild(el('path',{d:wedgePath(V[0],V[1],r,start,end), fill:color, opacity:0.6, stroke:color, 'stroke-width':1.5}));
+  if(showLabel){
+    const [lx,ly] = labelPoint(V[0],V[1],r+34,start,end);
+    svg.appendChild(el('circle',{cx:lx,cy:ly,r:19,fill:color}));
+    const t2 = el('text',{x:lx,y:ly,fill:'var(--board)','font-weight':900,'font-size':16,'text-anchor':'middle','dominant-baseline':'middle'});
+    t2.textContent = Math.round(diff)+'°';
+    svg.appendChild(t2);
+  }
+  return diff;
+}
+function regularPolygon(n, cx, cy, R){
+  const verts=[];
+  for(let i=0;i<n;i++){
+    const ang = -90 + i*(360/n);
+    verts.push(polar(cx,cy,R,ang));
+  }
+  return verts;
+}
+function drawPolygon(svg, verts, fill){
+  const d = verts.map((p,i)=> (i===0?'M':'L') + ' ' + p[0] + ' ' + p[1]).join(' ') + ' Z';
+  svg.appendChild(el('path',{d, fill: fill||'rgba(242,240,230,0.03)', stroke:'var(--chalk)', 'stroke-width':3, 'stroke-linejoin':'round'}));
+}
+const palette = ['var(--cyan)','var(--pink)','var(--yellow)','var(--orange)'];
+function triangulate(svg, verts){
+  const n = verts.length;
+  for(let i=1; i<=n-2; i++){
+    const tri = [verts[0], verts[i], verts[i+1]];
+    const d = `M ${tri[0][0]} ${tri[0][1]} L ${tri[1][0]} ${tri[1][1]} L ${tri[2][0]} ${tri[2][1]} Z`;
+    svg.appendChild(el('path',{d, fill:palette[(i-1)%palette.length], opacity:0.32, stroke:'var(--chalk)', 'stroke-width':1.5}));
+  }
+  return n-2;
+}
+
+// ---------- SLIDE 1: 内角の和の考え方 (static, n=5) ----------
+function renderIdea(){
+  const svg = document.getElementById('svgIdea');
+  svg.innerHTML = '';
+  const n = 5;
+  const verts = regularPolygon(n, 450, 330, 220);
+  const triCount = triangulate(svg, verts);
+  drawPolygon(svg, verts);
+  verts.forEach(p=> svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:5,fill:'var(--chalk)'})) );
+  document.getElementById('ideaCaption').innerHTML =
+    `五角形（n＝5）は、頂点から対角線を引くと <b style="color:var(--chalk)">${triCount}個</b> の三角形に分けられる → 180°×${triCount}＝<b style="color:var(--yellow)">${180*triCount}°</b>`;
+}
+
+// ---------- SLIDE 2: 内角の和の公式 (interactive) ----------
+const sumN = document.getElementById('sumN');
+const sumReadout = document.getElementById('sumReadout');
+function renderSum(){
+  const svg = document.getElementById('svgSum');
+  svg.innerHTML = '';
+  const n = +sumN.value;
+  const verts = regularPolygon(n, 450, 330, 220);
+  const triCount = triangulate(svg, verts);
+  drawPolygon(svg, verts);
+  verts.forEach(p=> svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:5,fill:'var(--chalk)'})) );
+  sumReadout.innerHTML = `n＝${n} → (n−2)＝<span style="color:var(--yellow)">${triCount}</span>個の三角形<br>180×${triCount}＝<span style="color:var(--yellow)">${180*triCount}°</span>`;
+}
+sumN.addEventListener('input', renderSum);
+
+// ---------- SLIDE 3: 外角の和が360°になる証明 (static, n=6) ----------
+function renderProof(){
+  const svg = document.getElementById('svgProof');
+  svg.innerHTML = '';
+  const n = 6;
+  const verts = regularPolygon(n, 450, 330, 200);
+  drawPolygon(svg, verts);
+  for(let i=0;i<n;i++){
+    const V = verts[i], Vprev = verts[(i-1+n)%n], Vnext = verts[(i+1)%n];
+    angleArc(svg, V, Vprev, Vnext, 34, 'var(--cyan)', false);
+    const dx = V[0]-Vprev[0], dy = V[1]-Vprev[1];
+    const len = Math.hypot(dx,dy);
+    const ext = [V[0]+dx/len*60, V[1]+dy/len*60];
+    svg.appendChild(lineSeg(V[0],V[1],ext[0],ext[1], {'stroke-dasharray':'2 6', 'stroke-width':2}));
+    angleArc(svg, V, ext, Vnext, 34, 'var(--orange)', false);
+  }
+  verts.forEach(p=> svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:5,fill:'var(--chalk)'})) );
+  const lc = el('text',{x:450,y:560,fill:'var(--cyan)','font-size':20,'font-weight':900,'text-anchor':'middle'}); lc.textContent='内角';
+  const le = el('text',{x:600,y:560,fill:'var(--orange)','font-size':20,'font-weight':900,'text-anchor':'middle'}); le.textContent='外角';
+  svg.appendChild(lc); svg.appendChild(le);
+}
+
+// ---------- SLIDE 4: 外角の和 (interactive) ----------
+const extN = document.getElementById('extN');
+const extReadout = document.getElementById('extReadout');
+function renderExt(){
+  const svg = document.getElementById('svgExt');
+  svg.innerHTML = '';
+  const n = +extN.value;
+  const verts = regularPolygon(n, 450, 330, 200);
+  drawPolygon(svg, verts);
+  let total = 0;
+  for(let i=0;i<n;i++){
+    const V = verts[i], Vprev = verts[(i-1+n)%n], Vnext = verts[(i+1)%n];
+    const dx = V[0]-Vprev[0], dy = V[1]-Vprev[1];
+    const len = Math.hypot(dx,dy);
+    const ext = [V[0]+dx/len*80, V[1]+dy/len*80];
+    svg.appendChild(lineSeg(V[0],V[1],ext[0],ext[1], {'stroke-dasharray':'2 6', 'stroke-width':2}));
+    const isInteger = Math.abs(360/n - Math.round(360/n)) < 0.01;
+    const mag = angleArc(svg, V, ext, Vnext, 30, 'var(--orange)', isInteger);
+    total += mag;
+  }
+  verts.forEach(p=> svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:5,fill:'var(--chalk)'})) );
+  const isIntegerAll = Math.abs(360/n - Math.round(360/n)) < 0.01;
+  extReadout.innerHTML = `外角${n}個の合計 ＝ <span style="color:var(--orange)">${Math.round(total)}°</span>` +
+    (isIntegerAll ? '' : '<br><span style="font-weight:400; font-size:.75em; color:var(--chalk-dim);">（1つの外角が整数にならないため数値は非表示）</span>');
+}
+extN.addEventListener('input', renderExt);
+
+// ---------- slide navigation ----------
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+let idx = 0;
+slides.forEach((_,i)=>{ const d = document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d); });
+function show(i){
+  idx = Math.max(0, Math.min(slides.length-1, i));
+  slides.forEach((s,j)=>s.classList.toggle('active', j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
+  document.getElementById('cnt').textContent = idx+1;
+  if(idx===0) renderIdea();
+  if(idx===1) renderSum();
+  if(idx===2) renderProof();
+  if(idx===3) renderExt();
+}
+document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
+window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+
+renderIdea();
+show(0);
+</script>
+</body>
+</html>
