@@ -61,10 +61,18 @@ a.item:hover{ border-color: var(--yellow); background: rgba(244,211,94,0.06); tr
 }
 .arrow{ color: var(--yellow); font-size:1.3rem; flex-shrink:0; }
 .item.disabled .arrow{ visibility:hidden; }
+.backnav{ display:flex; gap:.6em; margin-bottom:1.6em; }
+.backnav a{
+  font-size:.8rem; padding:.4em .9em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="backnav"><a href="../index.html">← 単元一覧</a></div>
   <div class="eyebrow">中学2年 数学</div>
   <h1 class="disp">第４章　図形の性質</h1>
   <div class="subtitle">授業スライド一覧</div>

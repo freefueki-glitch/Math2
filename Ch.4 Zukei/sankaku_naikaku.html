@@ -79,11 +79,22 @@ ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrin
 .dots span.active{ background: var(--yellow); }
 .counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; }
 .unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
 </style>
 </head>
 <body>
 <div class="deck">
   <div class="unit-tag">中学2年 数学 ／ 図形の性質</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
   <div class="counter"><span id="cnt">1</span> / 6</div>
 
   <!-- 1: 内角と外角とは -->

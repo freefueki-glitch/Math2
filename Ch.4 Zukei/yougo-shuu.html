@@ -38,6 +38,13 @@ h1.disp{
   background:transparent; color:var(--chalk); cursor:pointer; transition: all .2s ease;
 }
 .toolbar button:hover{ border-color: var(--yellow); color: var(--yellow); }
+.backnav{ display:flex; gap:.6em; margin-bottom:1.6em; }
+.backnav a{
+  font-size:.8rem; padding:.4em .9em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
 
 .box{
   border: 1.5px solid var(--rule); border-radius: 10px;
@@ -66,6 +73,10 @@ footer{ text-align:center; color: var(--chalk-dim); font-size:.85rem; margin-top
 </head>
 <body>
 <div class="wrap">
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
   <div class="top">
     <div class="eyebrow">中学2年 数学 ／ 第4章 図形の性質</div>
     <h1 class="disp">用語集（必ず覚える）</h1>
