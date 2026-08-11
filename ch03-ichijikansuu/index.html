@@ -68,6 +68,20 @@ a.item:hover{ border-color: var(--yellow); background: rgba(244,211,94,0.06); tr
   transition: all .2s ease;
 }
 .backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+.resources{ width:100%; margin-top:2.4em; }
+.resources .eyebrow{ margin-bottom:.8em; }
+.reslist{ width:100%; display:flex; flex-direction:column; gap:.7em; }
+.resitem{
+  display:flex; align-items:center; gap:1em;
+  padding:.9em 1.2em; border-radius:12px;
+  border:1.5px dashed var(--rule);
+  text-decoration:none; color:var(--chalk);
+  transition: all .2s ease;
+}
+.resitem:hover{ border-color:var(--yellow); background: rgba(244,211,94,0.06); }
+.resitem .icon{ font-size:1.3rem; color:var(--yellow); flex-shrink:0; }
+.resitem .rtitle{ font-size:1rem; font-weight:700; flex-grow:1; }
+.resitem .rnote{ font-size:.8rem; color:var(--chalk-dim); }
 </style>
 </head>
 <body>
@@ -79,36 +93,57 @@ a.item:hover{ border-color: var(--yellow); background: rgba(244,211,94,0.06); tr
   <div class="divider"></div>
 
   <div class="list">
+    <a class="item" href="https://freefueki-glitch.github.io/function-grapher2/" target="_blank" rel="noopener">
+      <span class="hour">ツール</span>
+      <span class="title">グラフ描写サイト</span>
+      <span class="arrow">›</span>
+    </a>
     <div class="item disabled">
       <span class="hour">1時間目</span>
-      <span class="title">（　　　　　　　　　　）</span>
-      <span class="badge">準備中</span>
+      <span class="title">1学期に学習済み</span>
+      <span class="badge">リンクなし</span>
     </div>
     <div class="item disabled">
       <span class="hour">2時間目</span>
-      <span class="title">（　　　　　　　　　　）</span>
-      <span class="badge">準備中</span>
+      <span class="title">1学期に学習済み</span>
+      <span class="badge">リンクなし</span>
     </div>
     <div class="item disabled">
       <span class="hour">3時間目</span>
-      <span class="title">（　　　　　　　　　　）</span>
-      <span class="badge">準備中</span>
+      <span class="title">1学期に学習済み</span>
+      <span class="badge">リンクなし</span>
     </div>
     <div class="item disabled">
       <span class="hour">4時間目</span>
-      <span class="title">（　　　　　　　　　　）</span>
-      <span class="badge">準備中</span>
+      <span class="title">1学期に学習済み</span>
+      <span class="badge">リンクなし</span>
     </div>
     <div class="item disabled">
       <span class="hour">5時間目</span>
-      <span class="title">（　　　　　　　　　　）</span>
-      <span class="badge">準備中</span>
+      <span class="title">1学期に学習済み</span>
+      <span class="badge">リンクなし</span>
     </div>
     <a class="item" href="hen-iki.html">
       <span class="hour">6時間目</span>
       <span class="title">変域</span>
       <span class="arrow">›</span>
     </a>
+  </div>
+
+  <div class="resources">
+    <div class="eyebrow">配布資料</div>
+    <div class="reslist">
+      <a class="resitem" href="graph-tool-guide.pdf" target="_blank">
+        <span class="icon">📄</span>
+        <span class="rtitle">関数グラフ描画サイト　使用方法</span>
+        <span class="rnote">PDF</span>
+      </a>
+      <a class="resitem" href="report-assignment.pdf" target="_blank">
+        <span class="icon">📄</span>
+        <span class="rtitle">レポート課題（グラフで、絵をつくろう！）</span>
+        <span class="rnote">PDF</span>
+      </a>
+    </div>
   </div>
 </div>
 </body>
