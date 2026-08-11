@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>一次関数の変域</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.5rem, 3.2vw, 2.4rem); margin: 0 0 .8em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(58vw,640px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .9em; min-width: 260px; max-width: 330px; font-size: clamp(.9rem,1.2vw,1.05rem); }
+.controls label{ color: var(--chalk-dim); font-size:.88em; display:block; margin-bottom:.2em; }
+input[type=range]{ width:100%; accent-color: var(--yellow); }
+.readout{
+  font-family:'Zen Kaku Gothic New',sans-serif; font-weight:900; font-size: clamp(1rem,1.7vw,1.25rem);
+  padding: .6em .8em; border: 1.5px dashed var(--rule); border-radius: 14px; text-align:center; line-height:1.8;
+}
+.caption{ max-width: 660px; text-align:center; color: var(--chalk-dim); font-size: clamp(.9rem,1.4vw,1.05rem); line-height:1.75; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 760px; text-align:left; font-size: clamp(.95rem,1.5vw,1.12rem); line-height:1.8; margin-bottom:1em;
+}
+.proof-step{
+  display:flex; align-items:flex-start; gap:.8em; font-size: clamp(.92rem,1.4vw,1.05rem);
+  line-height:1.6; padding:.6em .2em; border-bottom:1px solid var(--rule);
+}
+.stepnum{
+  flex-shrink:0; width:1.7em; height:1.7em; border-radius:50%; background: var(--yellow); color:#20301f;
+  font-weight:900; font-size:.95em; display:flex; align-items:center; justify-content:center;
+}
+.examplebox{
+  border:1px solid var(--rule); border-radius:12px; padding:1em 1.3em; max-width:760px; width:100%;
+  margin-top:.8em; text-align:left; font-size: clamp(.92rem,1.4vw,1.08rem); line-height:1.9;
+}
+.examplebox b{ color: var(--yellow); }
+.correspond-table{ width:100%; border-collapse:collapse; margin:.7em 0; }
+.correspond-table td{ border:1px solid var(--rule); padding:.5em .6em; text-align:center; font-size:1.1em; }
+.correspond-table td.rowlabel{ background: rgba(242,240,230,0.05); font-weight:900; color:var(--chalk-dim); width:2.2em; }
+.correspond-table td.arrow{ color:var(--yellow); font-weight:900; width:1.8em; }
+.conclusion{ margin-top:.5em; font-size:1.08em; }
+.conclusion b{ color:var(--orange); }
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.7em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(1rem,1.8vw,1.25rem); line-height:1.6; padding: .45em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 一次関数</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 4</div>
+
+  <!-- 1: 変域とは -->
+  <section class="slide active">
+    <h2 class="disp">① 変域とは</h2>
+    <div class="definition-box">xやyが<b>とることのできる値の範囲</b>を、変域という。<br><b>a≦x≦b</b>のように、不等号を使って表す。</div>
+    <svg class="diagram" id="svgDef" viewBox="0 0 900 260"></svg>
+    <div class="caption">たとえば「−1≦x≦3」なら、xは−1以上3以下の値をとることができる、という意味。</div>
+  </section>
+
+  <!-- 2: 一次関数のグラフと変域 -->
+  <section class="slide">
+    <h2 class="disp">② 一次関数のグラフと変域</h2>
+    <div class="definition-box">xの変域が決まっているとき、対応する<b>yの変域</b>は、グラフをかいて調べることができる。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgGraph" viewBox="0 0 900 800"></svg>
+      <div class="controls">
+        <div><label for="slopeA">傾き a</label><input type="range" id="slopeA" min="-3" max="3" step="1" value="2"></div>
+        <div><label for="interceptB">切片 b</label><input type="range" id="interceptB" min="-3" max="3" step="1" value="1"></div>
+        <div><label for="xMin">xの変域（下限）</label><input type="range" id="xMin" min="-6" max="0" step="1" value="-3"></div>
+        <div><label for="xMax">xの変域（上限）</label><input type="range" id="xMax" min="0" max="6" step="1" value="3"></div>
+        <div class="readout" id="graphReadout"></div>
+      </div>
+    </div>
+    <div class="caption">傾きが正のときと負のときで、xとyの対応の順番が変わることに注目しよう。</div>
+  </section>
+
+  <!-- 3: 変域を求める手順 -->
+  <section class="slide">
+    <h2 class="disp">③ 変域を求める手順</h2>
+    <div class="diagram-row" style="align-items:stretch;">
+      <div class="controls" style="max-width:380px;">
+        <div class="proof-step"><span class="stepnum">1</span><span>傾きの符号を確認する。<br>正なら<b>増加</b>、負なら<b>減少</b>。</span></div>
+        <div class="proof-step"><span class="stepnum">2</span><span>xの変域の<b>両端の値</b>を、y＝ax＋bに代入してyの値を求める。</span></div>
+        <div class="proof-step"><span class="stepnum">3</span><span>傾きが<b>正</b>なら、xが小さいほうがyも小さい（<b>そのままの順</b>）。</span></div>
+        <div class="proof-step"><span class="stepnum">4</span><span>傾きが<b>負</b>なら、xが小さいほうがyは大きい（<b>順番が入れかわる</b>）。</span></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:.8em; max-width:400px;">
+        <div class="examplebox">
+          <b>例1（傾きが正）</b> y＝2x＋1、−1≦x≦3
+          <table class="correspond-table">
+            <tr><td class="rowlabel">x</td><td>−1</td><td class="arrow">→</td><td>3</td></tr>
+            <tr><td class="rowlabel">y</td><td>−1</td><td class="arrow">→</td><td>7</td></tr>
+          </table>
+          <div class="conclusion">xの増加とともにyも増加（そのままの順）→ <b>−1≦y≦7</b></div>
+        </div>
+        <div class="examplebox">
+          <b>例2（傾きが負）</b> y＝−x＋2、−1≦x≦3
+          <table class="correspond-table">
+            <tr><td class="rowlabel">x</td><td>−1</td><td class="arrow">→</td><td>3</td></tr>
+            <tr><td class="rowlabel">y</td><td>3</td><td class="arrow">→</td><td>−1</td></tr>
+          </table>
+          <div class="conclusion">xが増加するとyは減少（順番が入れかわる）→ 小さい方から並べて <b>−1≦y≦3</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4: まとめ -->
+  <section class="slide">
+    <h2 class="disp">④ まとめ</h2>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span><span><b>変域</b>とは、xやyがとることのできる値の範囲のこと。</span></li>
+      <li><span class="mark yellow">◆</span><span>一次関数の変域は、xの変域の<b>両端の値</b>をy＝ax＋bに代入して求める。</span></li>
+      <li><span class="mark orange">◆</span><span>傾きが<b>正</b>なら、xとyの変域は<b>同じ順</b>になる。</span></li>
+      <li><span class="mark pink">◆</span><span>傾きが<b>負</b>なら、xとyの変域は<b>順番が入れかわる</b>。大小関係に注意する。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+
+<script>
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(svgns, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function lineSeg(x1,y1,x2,y2, extra){ return el('line', Object.assign({x1,y1,x2,y2, stroke:'var(--chalk)', 'stroke-width':2, 'stroke-linecap':'round'}, extra||{})); }
+
+// ---------- SLIDE 1: 変域とは (number line, static) ----------
+function renderDef(){
+  const svg = document.getElementById('svgDef');
+  svg.innerHTML = '';
+  const ox=450, scale=60, y=140;
+  svg.appendChild(lineSeg(60,y,840,y,{'stroke-width':2.5}));
+  for(let i=-6;i<=6;i++){
+    const x = ox+i*scale;
+    svg.appendChild(lineSeg(x,y-8,x,y+8,{'stroke-width':1.5,stroke:'var(--rule)'}));
+    if(i%2===0){
+      const t = el('text',{x, y:y+34, fill:'var(--chalk-dim)','font-size':16,'text-anchor':'middle'});
+      t.textContent = i;
+      svg.appendChild(t);
+    }
+  }
+  // arrowheads
+  svg.appendChild(el('path',{d:`M 840 ${y} l -14 -8 v16 z`, fill:'var(--chalk)'}));
+  svg.appendChild(el('path',{d:`M 60 ${y} l 14 -8 v16 z`, fill:'var(--chalk)'}));
+  // highlighted segment -1 to 3
+  const xa = ox+(-1)*scale, xb = ox+3*scale;
+  svg.appendChild(lineSeg(xa,y,xb,y,{stroke:'var(--yellow)','stroke-width':6}));
+  [xa,xb].forEach(x=>{
+    svg.appendChild(el('circle',{cx:x,cy:y,r:8,fill:'var(--board)',stroke:'var(--yellow)','stroke-width':4}));
+  });
+  const lbl = el('text',{x:(xa+xb)/2,y:y-24,fill:'var(--yellow)','font-size':22,'font-weight':900,'text-anchor':'middle'});
+  lbl.textContent = '−1≦x≦3';
+  svg.appendChild(lbl);
+}
+
+// ---------- SLIDE 2: 一次関数のグラフと変域 (interactive) ----------
+const scale=35, ox=450, oy=420;
+function sx(x){ return ox+x*scale; }
+function sy(y){ return oy-y*scale; }
+const slopeA = document.getElementById('slopeA');
+const interceptB = document.getElementById('interceptB');
+const xMinI = document.getElementById('xMin');
+const xMaxI = document.getElementById('xMax');
+const graphReadout = document.getElementById('graphReadout');
+
+function renderGraph(){
+  const svg = document.getElementById('svgGraph');
+  svg.innerHTML = '';
+  const a = +slopeA.value, b = +interceptB.value;
+  let xMin = +xMinI.value, xMax = +xMaxI.value;
+  if(xMin >= xMax) xMax = xMin+1;
+
+  // grid
+  for(let i=-8;i<=8;i++){
+    svg.appendChild(lineSeg(sx(i),sy(-8),sx(i),sy(8),{stroke:'var(--rule)','stroke-width':1}));
+    svg.appendChild(lineSeg(sx(-8),sy(i),sx(8),sy(i),{stroke:'var(--rule)','stroke-width':1}));
+  }
+  // axis tick labels (every 2 units, skip 0 which is labelled separately at the origin)
+  for(let i=-8;i<=8;i+=2){
+    if(i!==0){
+      const tx = el('text',{x:sx(i),y:sy(0)+22,fill:'var(--chalk-dim)','font-size':15,'text-anchor':'middle'});
+      tx.textContent = i;
+      svg.appendChild(tx);
+      const ty = el('text',{x:sx(0)-12,y:sy(i)+5,fill:'var(--chalk-dim)','font-size':15,'text-anchor':'end'});
+      ty.textContent = i;
+      svg.appendChild(ty);
+    }
+  }
+  const t0 = el('text',{x:sx(0)-12,y:sy(0)+22,fill:'var(--chalk-dim)','font-size':15,'text-anchor':'end'});
+  t0.textContent = '0';
+  svg.appendChild(t0);
+  // axes
+  svg.appendChild(lineSeg(sx(-8),sy(0),sx(8),sy(0),{'stroke-width':2.5}));
+  svg.appendChild(lineSeg(sx(0),sy(-8),sx(0),sy(8),{'stroke-width':2.5}));
+  svg.appendChild(el('path',{d:`M ${sx(8)} ${sy(0)} l -14 -8 v16 z`, fill:'var(--chalk)'}));
+  svg.appendChild(el('path',{d:`M ${sx(0)} ${sy(8)} l -8 14 h16 z`, fill:'var(--chalk)'}));
+  const xlab = el('text',{x:sx(8)-6,y:sy(0)+26,fill:'var(--chalk-dim)','font-size':18,'text-anchor':'end'}); xlab.textContent='x';
+  const ylab = el('text',{x:sx(0)+18,y:sy(8)+10,fill:'var(--chalk-dim)','font-size':18}); ylab.textContent='y';
+  svg.appendChild(xlab); svg.appendChild(ylab);
+
+  // full faint line across the visible range
+  const yAtLeft = a*(-8)+b, yAtRight = a*8+b;
+  svg.appendChild(lineSeg(sx(-8),sy(Math.max(-8,Math.min(8,yAtLeft))),sx(8),sy(Math.max(-8,Math.min(8,yAtRight))),{stroke:'var(--chalk-dim)','stroke-width':1.5,'stroke-dasharray':'4 5'}));
+
+  // highlighted domain segment on the line
+  const yMinX = a*xMin+b, yMaxX = a*xMax+b;
+  svg.appendChild(lineSeg(sx(xMin),sy(yMinX),sx(xMax),sy(yMaxX),{stroke:'var(--yellow)','stroke-width':4}));
+
+  // projections + endpoint dots (with their (x, y) coordinates labelled)
+  [[xMin,yMinX,'var(--cyan)',-1],[xMax,yMaxX,'var(--pink)',1]].forEach(([xv,yv,color,side])=>{
+    svg.appendChild(lineSeg(sx(xv),sy(yv),sx(xv),sy(0),{stroke:color,'stroke-width':1.5,'stroke-dasharray':'3 4'}));
+    svg.appendChild(lineSeg(sx(xv),sy(yv),sx(0),sy(yv),{stroke:color,'stroke-width':1.5,'stroke-dasharray':'3 4'}));
+    svg.appendChild(el('circle',{cx:sx(xv),cy:sy(yv),r:7,fill:color}));
+    const lbl = el('text',{x:sx(xv)+side*10, y:sy(yv)-12, fill:color, 'font-size':16, 'font-weight':900, 'text-anchor': side<0 ? 'end':'start'});
+    lbl.textContent = `(${xv}, ${yv})`;
+    svg.appendChild(lbl);
+  });
+
+  // thick range indicators on the axes
+  svg.appendChild(lineSeg(sx(xMin),sy(0)+5,sx(xMax),sy(0)+5,{stroke:'var(--yellow)','stroke-width':5}));
+  const yLo = Math.min(yMinX,yMaxX), yHi = Math.max(yMinX,yMaxX);
+  svg.appendChild(lineSeg(sx(0)-5,sy(yLo),sx(0)-5,sy(yHi),{stroke:'var(--orange)','stroke-width':5}));
+
+  graphReadout.innerHTML =
+    `y＝${a}x＋${b}<br>` +
+    `<span style="color:var(--yellow)">xの変域：${xMin}≦x≦${xMax}</span><br>` +
+    `<span style="color:var(--orange)">yの変域：${yLo}≦y≦${yHi}</span>`;
+}
+[slopeA, interceptB, xMinI, xMaxI].forEach(inp=> inp.addEventListener('input', renderGraph));
+
+// ---------- slide navigation ----------
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+let idx = 0;
+slides.forEach((_,i)=>{ const d = document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d); });
+function show(i){
+  idx = Math.max(0, Math.min(slides.length-1, i));
+  slides.forEach((s,j)=>s.classList.toggle('active', j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
+  document.getElementById('cnt').textContent = idx+1;
+  if(idx===0) renderDef();
+  if(idx===1) renderGraph();
+}
+document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
+window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+
+renderDef();
+show(0);
+</script>
+</body>
+</html>
