@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>2直線の交点を求める</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.5rem, 3.2vw, 2.4rem); margin: 0 0 .8em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(72vw,760px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .9em; min-width: 260px; max-width: 330px; font-size: clamp(.9rem,1.2vw,1.05rem); }
+.controls label{ color: var(--chalk-dim); font-size:.88em; display:block; margin-bottom:.2em; }
+input[type=range]{ width:100%; accent-color: var(--yellow); }
+.readout{
+  font-family:'Zen Kaku Gothic New',sans-serif; font-weight:900; font-size: clamp(1rem,1.7vw,1.25rem);
+  padding: .6em .8em; border: 1.5px dashed var(--rule); border-radius: 14px; text-align:center; line-height:1.8;
+}
+.caption{ max-width: 680px; text-align:center; color: var(--chalk-dim); font-size: clamp(.9rem,1.4vw,1.05rem); line-height:1.75; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 780px; text-align:left; font-size: clamp(.95rem,1.5vw,1.12rem); line-height:1.8; margin-bottom:1em;
+}
+.proof-step{
+  display:flex; align-items:flex-start; gap:.8em; font-size: clamp(.92rem,1.5vw,1.08rem);
+  line-height:1.7; padding:.6em .2em; border-bottom:1px solid var(--rule);
+}
+.stepnum{
+  flex-shrink:0; width:1.8em; height:1.8em; border-radius:50%; background: var(--yellow); color:#20301f;
+  font-weight:900; font-size:1em; display:flex; align-items:center; justify-content:center;
+}
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.7em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(1rem,1.8vw,1.25rem); line-height:1.6; padding: .45em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.frac{ display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 .2em; line-height:1.1; }
+.frac .num{ padding:0 .2em; border-bottom:2px solid currentColor; }
+.frac .den{ padding:0 .2em; }
+.stepline{
+  display:flex; align-items:center; justify-content:center; gap:.6em;
+  font-size: clamp(1rem,1.9vw,1.25rem); padding:.55em .2em; border-bottom:1px solid var(--rule);
+}
+.stepline:last-child{ border-bottom:none; }
+.stepline .arrow{ color:var(--chalk-dim); font-size:.7em; }
+.stepline .tag{ font-size:.62em; color:var(--chalk-dim); flex-shrink:0; width:5.5em; text-align:right; }
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 一次関数</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 4</div>
+
+  <!-- 1: 考え方 -->
+  <section class="slide active">
+    <h2 class="disp">① 2直線の交点とは</h2>
+    <div class="definition-box">2直線の交点の座標は、<b>2つの式を連立方程式として解く</b>ことで求められる。<br>グラフでは、2つの直線が交わる点にあたる。</div>
+    <svg class="diagram" id="svgIdea" viewBox="0 0 900 800"></svg>
+    <div class="caption">交点は、2つの直線のどちらの式にもあてはまる、ただ1つの点（x, y）。</div>
+  </section>
+
+  <!-- 2: グラフから交点を求める -->
+  <section class="slide">
+    <h2 class="disp">② グラフから交点を求める</h2>
+    <div class="definition-box">2直線の式をそれぞれ読み取り、連立方程式として解けば、交点の座標がわかる。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgGraph" viewBox="0 0 900 800"></svg>
+      <div class="controls">
+        <div style="color:var(--cyan); font-weight:700;">直線1：y＝a₁x＋b₁</div>
+        <div><label for="a1">傾き a₁</label><input type="range" id="a1" min="-3" max="3" step="1" value="2"></div>
+        <div><label for="b1">切片 b₁</label><input type="range" id="b1" min="-4" max="4" step="1" value="-1"></div>
+        <div style="color:var(--pink); font-weight:700; margin-top:.4em;">直線2：y＝a₂x＋b₂</div>
+        <div><label for="a2">傾き a₂</label><input type="range" id="a2" min="-3" max="3" step="1" value="-1"></div>
+        <div><label for="b2">切片 b₂</label><input type="range" id="b2" min="-4" max="4" step="1" value="4"></div>
+        <div class="readout" id="graphReadout"></div>
+      </div>
+    </div>
+    <div class="caption">交点の座標は、整数になるとは限らない。分数になることもある。</div>
+  </section>
+
+  <!-- 3: 交点の求め方(手順) -->
+  <section class="slide">
+    <h2 class="disp">③ 交点の求め方（分数になる例）</h2>
+    <div class="diagram-row">
+      <div class="controls" style="max-width:400px;">
+        <div class="proof-step"><span class="stepnum">1</span><span>2つの式を、<b>ax＋by＝c</b> の形に変形する。</span></div>
+        <div class="proof-step"><span class="stepnum">2</span><span>2つの式を<b>たすかひくか</b>して、yを消去する。</span></div>
+        <div class="proof-step"><span class="stepnum">3</span><span>xについての方程式を解く。</span></div>
+        <div class="proof-step"><span class="stepnum">4</span><span>求めたxを、どちらかの式に代入してyを求める。</span></div>
+      </div>
+      <div class="controls" style="max-width:420px; border:1px solid var(--rule); border-radius:12px; padding:1.2em 1.4em;">
+        <div style="color:var(--yellow); font-weight:700; margin-bottom:.6em;">例題</div>
+        <div class="stepline"><span class="tag">直線1</span><span>y＝2x−1</span></div>
+        <div class="stepline"><span class="tag">直線2</span><span>y＝−x＋4</span></div>
+        <div class="stepline" style="color:var(--yellow); font-weight:900; margin-top:.6em;">交点：(<span class="frac"><span class="num">5</span><span class="den">3</span></span>, <span class="frac"><span class="num">7</span><span class="den">3</span></span>)</div>
+      </div>
+    </div>
+    <div class="caption">y＝2x−1とy＝−x＋4を等しいとおく方法（②のグラフと同じ計算方法）でも、同じ答えになる。</div>
+  </section>
+
+  <!-- 4: まとめ -->
+  <section class="slide">
+    <h2 class="disp">④ まとめ</h2>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span><span>2直線の交点は、2つの式を<b>連立方程式</b>として解けば求められる。</span></li>
+      <li><span class="mark yellow">◆</span><span><b>ax＋by＝c</b>の形にそろえ、<b>加減法</b>（たす・ひく）でyを消去してxを求め、どちらかの式に代入して<b>yを求める</b>。</span></li>
+      <li><span class="mark orange">◆</span><span>交点の座標は、整数とは限らず<b>分数</b>になることもある。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+
+<script>
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(svgns, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function lineSeg(x1,y1,x2,y2, extra){ return el('line', Object.assign({x1,y1,x2,y2, stroke:'var(--chalk)', 'stroke-width':2, 'stroke-linecap':'round'}, extra||{})); }
+
+const scale=35, ox=450, oy=420;
+function sx(x){ return ox+x*scale; }
+function sy(y){ return oy-y*scale; }
+
+function drawAxes(svg){
+  for(let i=-8;i<=8;i++){
+    svg.appendChild(lineSeg(sx(i),sy(-8),sx(i),sy(8),{stroke:'var(--rule)','stroke-width':1}));
+    svg.appendChild(lineSeg(sx(-8),sy(i),sx(8),sy(i),{stroke:'var(--rule)','stroke-width':1}));
+  }
+  for(let i=-8;i<=8;i+=2){
+    if(i!==0){
+      const tx = el('text',{x:sx(i),y:sy(0)+26,fill:'var(--chalk-dim)','font-size':18,'text-anchor':'middle'});
+      tx.textContent = i; svg.appendChild(tx);
+      const ty = el('text',{x:sx(0)-14,y:sy(i)+6,fill:'var(--chalk-dim)','font-size':18,'text-anchor':'end'});
+      ty.textContent = i; svg.appendChild(ty);
+    }
+  }
+  const t0 = el('text',{x:sx(0)-14,y:sy(0)+26,fill:'var(--chalk-dim)','font-size':18,'text-anchor':'end'});
+  t0.textContent = '0'; svg.appendChild(t0);
+  svg.appendChild(lineSeg(sx(-8),sy(0),sx(8),sy(0),{'stroke-width':2.5}));
+  svg.appendChild(lineSeg(sx(0),sy(-8),sx(0),sy(8),{'stroke-width':2.5}));
+  svg.appendChild(el('path',{d:`M ${sx(8)} ${sy(0)} l -14 -8 v16 z`, fill:'var(--chalk)'}));
+  svg.appendChild(el('path',{d:`M ${sx(0)} ${sy(8)} l -8 14 h16 z`, fill:'var(--chalk)'}));
+  const xlab = el('text',{x:sx(8)-6,y:sy(0)+30,fill:'var(--chalk-dim)','font-size':20,'text-anchor':'end'}); xlab.textContent='x';
+  const ylab = el('text',{x:sx(0)+20,y:sy(8)+10,fill:'var(--chalk-dim)','font-size':20}); ylab.textContent='y';
+  svg.appendChild(xlab); svg.appendChild(ylab);
+}
+function drawLine(svg, a, b, color){
+  let tMin=-8, tMax=8;
+  if(a!==0){
+    const t1=(-8-b)/a, t2=(8-b)/a;
+    const lo=Math.min(t1,t2), hi=Math.max(t1,t2);
+    tMin=Math.max(tMin,lo); tMax=Math.min(tMax,hi);
+  } else if(b<-8 || b>8){
+    return;
+  }
+  if(tMin>tMax) return;
+  svg.appendChild(lineSeg(sx(tMin),sy(a*tMin+b),sx(tMax),sy(a*tMax+b),{stroke:color||'var(--chalk)','stroke-width':3.5}));
+}
+function gcd(x,y){ x=Math.abs(x); y=Math.abs(y); while(y){ [x,y]=[y,x%y]; } return x||1; }
+function reduceFrac(num, den){
+  if(den<0){ num=-num; den=-den; }
+  const g = gcd(num,den);
+  return [num/g, den/g];
+}
+function fracHtml(mag, den){
+  return `<span class="frac"><span class="num">${mag}</span><span class="den">${den}</span></span>`;
+}
+function coordHtml(num, den){
+  const [n,d] = reduceFrac(num,den);
+  const sign = n<0 ? '−' : '';
+  return d===1 ? `${n}` : `${sign}${fracHtml(Math.abs(n),d)}`;
+}
+
+// ---------- SLIDE 1: 考え方 (static) ----------
+function renderIdea(){
+  const svg = document.getElementById('svgIdea');
+  svg.innerHTML = '';
+  drawAxes(svg);
+  drawLine(svg, 1, 0, 'var(--cyan)');
+  drawLine(svg, -1, 4, 'var(--pink)');
+  svg.appendChild(el('circle',{cx:sx(2),cy:sy(2),r:8,fill:'var(--yellow)'}));
+  const lbl = el('text',{x:sx(2)+16,y:sy(2)-14,fill:'var(--yellow)','font-size':19,'font-weight':900}); lbl.textContent='交点 (2, 2)';
+  svg.appendChild(lbl);
+  const l1 = el('text',{x:sx(-6.5),y:sy(-5.7),fill:'var(--cyan)','font-size':17,'font-weight':900}); l1.textContent='y＝x';
+  svg.appendChild(l1);
+  const l2 = el('text',{x:sx(4.8),y:sy(-0.6),fill:'var(--pink)','font-size':17,'font-weight':900}); l2.textContent='y＝−x＋4';
+  svg.appendChild(l2);
+}
+
+// ---------- SLIDE 2: グラフから交点を求める (interactive) ----------
+const a1I = document.getElementById('a1'), b1I = document.getElementById('b1');
+const a2I = document.getElementById('a2'), b2I = document.getElementById('b2');
+const graphReadout = document.getElementById('graphReadout');
+function renderGraph(){
+  const svg = document.getElementById('svgGraph');
+  svg.innerHTML = '';
+  const a1v=+a1I.value, b1v=+b1I.value, a2v=+a2I.value, b2v=+b2I.value;
+  drawAxes(svg);
+  drawLine(svg, a1v, b1v, 'var(--cyan)');
+  drawLine(svg, a2v, b2v, 'var(--pink)');
+  const l1 = el('text',{x:sx(-7.8),y:sy(7.3),fill:'var(--cyan)','font-size':18,'font-weight':900});
+  l1.textContent = `y＝${a1v}x＋${b1v}`;
+  svg.appendChild(l1);
+  const l2 = el('text',{x:sx(-7.8),y:sy(6.3),fill:'var(--pink)','font-size':18,'font-weight':900});
+  l2.textContent = `y＝${a2v}x＋${b2v}`;
+  svg.appendChild(l2);
+
+  if(a1v===a2v){
+    if(b1v===b2v){
+      graphReadout.innerHTML = `<span style="color:var(--orange);">2直線は同じ式（同じ直線）</span>`;
+    } else {
+      graphReadout.innerHTML = `<span style="color:var(--orange);">2直線は平行 → 交点なし</span>`;
+    }
+    return;
+  }
+  const xNum = b2v-b1v, xDen = a1v-a2v;
+  const [xn,xd] = reduceFrac(xNum,xDen);
+  const yNum = a1v*xn + b1v*xd, yDen = xd;
+  const px = xn/xd, py = yNum/yDen;
+  if(px>=-8 && px<=8 && py>=-8 && py<=8){
+    svg.appendChild(el('circle',{cx:sx(px),cy:sy(py),r:8,fill:'var(--yellow)'}));
+  }
+  graphReadout.innerHTML = `交点は (${coordHtml(xn,xd)}, ${coordHtml(yNum,yDen)})`;
+}
+[a1I,b1I,a2I,b2I].forEach(inp=> inp.addEventListener('input', renderGraph));
+
+// ---------- slide navigation ----------
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+let idx = 0;
+slides.forEach((_,i)=>{ const d = document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d); });
+function show(i){
+  idx = Math.max(0, Math.min(slides.length-1, i));
+  slides.forEach((s,j)=>s.classList.toggle('active', j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
+  document.getElementById('cnt').textContent = idx+1;
+  if(idx===0) renderIdea();
+  if(idx===1) renderGraph();
+}
+document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
+window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+
+renderIdea();
+show(0);
+</script>
+</body>
+</html>

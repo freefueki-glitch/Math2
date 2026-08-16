@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>一次関数の式を求めよう1</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.5rem, 3.2vw, 2.4rem); margin: 0 0 .8em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(58vw,640px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .9em; min-width: 260px; max-width: 330px; font-size: clamp(.9rem,1.2vw,1.05rem); }
+.controls label{ color: var(--chalk-dim); font-size:.88em; display:block; margin-bottom:.2em; }
+input[type=range]{ width:100%; accent-color: var(--yellow); }
+.readout{
+  font-family:'Zen Kaku Gothic New',sans-serif; font-weight:900; font-size: clamp(1rem,1.7vw,1.25rem);
+  padding: .6em .8em; border: 1.5px dashed var(--rule); border-radius: 14px; text-align:center; line-height:1.8;
+}
+.caption{ max-width: 660px; text-align:center; color: var(--chalk-dim); font-size: clamp(.9rem,1.4vw,1.05rem); line-height:1.75; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 760px; text-align:left; font-size: clamp(.95rem,1.5vw,1.12rem); line-height:1.8; margin-bottom:1em;
+}
+.proof-step{
+  display:flex; align-items:flex-start; gap:.8em; font-size: clamp(.92rem,1.4vw,1.05rem);
+  line-height:1.6; padding:.6em .2em; border-bottom:1px solid var(--rule);
+}
+.stepnum{
+  flex-shrink:0; width:1.7em; height:1.7em; border-radius:50%; background: var(--yellow); color:#20301f;
+  font-weight:900; font-size:.95em; display:flex; align-items:center; justify-content:center;
+}
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.7em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(1rem,1.8vw,1.25rem); line-height:1.6; padding: .45em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.frac{ display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 .25em; line-height:1.15; }
+.frac .num{ padding:0 .25em; border-bottom:2px solid currentColor; }
+.frac .den{ padding:0 .25em; }
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 一次関数</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 5</div>
+
+  <!-- 1: 考え方 -->
+  <section class="slide active">
+    <h2 class="disp">① グラフから式を求める考え方</h2>
+    <div class="definition-box">一次関数の式は <b>y＝ax＋b</b> の形。<br>グラフから<b>傾き a</b> と<b>切片 b</b> を読み取れば、式を求めることができる。</div>
+    <svg class="diagram" id="svgIdea" viewBox="0 0 900 800"></svg>
+    <div class="caption">グラフが右上がりなら傾きは正、右下がりなら傾きは負。y軸と交わる点が切片。</div>
+  </section>
+
+  <!-- 2: 切片の読み取り方 -->
+  <section class="slide">
+    <h2 class="disp">② 切片 b の読み取り方</h2>
+    <div class="definition-box">y＝x＋b のグラフで、<b>bの値を動かして</b>みよう。<br>グラフが<b>y軸と交わる点</b>のy座標が、切片 <b>b</b> である。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgB" viewBox="0 0 900 800" style="width:min(84vw,880px);"></svg>
+      <div class="controls">
+        <div><label for="bInterceptB">切片 b</label><input type="range" id="bInterceptB" min="-4" max="4" step="1" value="2"></div>
+        <div class="readout" id="bReadout"></div>
+      </div>
+    </div>
+    <div class="caption">切片(せっぺん)を動かすと、y軸と交わる点も一緒に動くことを確認しよう。</div>
+  </section>
+
+  <!-- 3: 傾きの読み取り方 -->
+  <section class="slide">
+    <h2 class="disp">③ 傾き a の読み取り方</h2>
+    <div class="definition-box">y＝ax のグラフで、<b>aの値を動かして</b>みよう。<br>グラフ上の2点をとり、<b>a ＝ yの増加量 ÷ xの増加量</b>（変化の割合）で傾きを求める。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgA" viewBox="0 0 900 800" style="width:min(84vw,880px);"></svg>
+      <div class="controls">
+        <div><label for="aSlopeA">傾き a</label><input type="range" id="aSlopeA" min="-3" max="3" step="1" value="2"></div>
+        <div class="readout" id="aReadout"></div>
+      </div>
+    </div>
+    <div class="caption">黄色い階段（→1、↑a）が「変化の割合」を表す図。xが1増えるとyがいくつ増えるかを見れば、それがそのまま傾きaになる。</div>
+  </section>
+
+  <!-- 4: 変化の割合が分数になる場合 -->
+  <section class="slide">
+    <h2 class="disp">④ 変化の割合が分数になる場合</h2>
+    <div class="definition-box">2点のxの増加量が1でないときは、変化の割合は<b>分数</b>になることがある。約分できるときは、約分する。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgFrac" viewBox="0 0 900 800" style="width:min(84vw,880px);"></svg>
+      <div class="controls">
+        <div><label for="fracRun">xの増加量（点Bのx座標）</label><input type="range" id="fracRun" min="1" max="6" step="1" value="2"></div>
+        <div><label for="fracRise">yの増加量（点Bのy座標）</label><input type="range" id="fracRise" min="-6" max="6" step="1" value="3"></div>
+        <div class="readout" id="fracReadout"></div>
+      </div>
+    </div>
+    <div class="caption">点Aを(0, 0)、点Bを(xの増加量, yの増加量)として、a＝yの増加量／xの増加量 を分数のまま求める。</div>
+  </section>
+
+  <!-- 5: まとめ -->
+  <section class="slide">
+    <h2 class="disp">⑤ まとめ</h2>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span><span>グラフが<b>y軸と交わる点</b>のy座標が、切片 <b>b</b>。</span></li>
+      <li><span class="mark yellow">◆</span><span>グラフ上の2点から、<b>a＝yの増加量÷xの増加量</b> で傾きを求める。</span></li>
+      <li><span class="mark pink">◆</span><span>xの増加量が1でないときは、変化の割合は<b>分数</b>で表す（約分できれば約分する）。</span></li>
+      <li><span class="mark orange">◆</span><span>bとaがわかれば、式 <b>y＝ax＋b</b> が求められる。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+
+<script>
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(svgns, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function lineSeg(x1,y1,x2,y2, extra){ return el('line', Object.assign({x1,y1,x2,y2, stroke:'var(--chalk)', 'stroke-width':2, 'stroke-linecap':'round'}, extra||{})); }
+
+const scale=35, ox=450, oy=420;
+function sx(x){ return ox+x*scale; }
+function sy(y){ return oy-y*scale; }
+
+function drawAxes(svg){
+  for(let i=-8;i<=8;i++){
+    svg.appendChild(lineSeg(sx(i),sy(-8),sx(i),sy(8),{stroke:'var(--rule)','stroke-width':1}));
+    svg.appendChild(lineSeg(sx(-8),sy(i),sx(8),sy(i),{stroke:'var(--rule)','stroke-width':1}));
+  }
+  for(let i=-8;i<=8;i+=2){
+    if(i!==0){
+      const tx = el('text',{x:sx(i),y:sy(0)+26,fill:'var(--chalk-dim)','font-size':20,'text-anchor':'middle'});
+      tx.textContent = i; svg.appendChild(tx);
+      const ty = el('text',{x:sx(0)-14,y:sy(i)+6,fill:'var(--chalk-dim)','font-size':20,'text-anchor':'end'});
+      ty.textContent = i; svg.appendChild(ty);
+    }
+  }
+  const t0 = el('text',{x:sx(0)-14,y:sy(0)+26,fill:'var(--chalk-dim)','font-size':20,'text-anchor':'end'});
+  t0.textContent = '0'; svg.appendChild(t0);
+  svg.appendChild(lineSeg(sx(-8),sy(0),sx(8),sy(0),{'stroke-width':2.5}));
+  svg.appendChild(lineSeg(sx(0),sy(-8),sx(0),sy(8),{'stroke-width':2.5}));
+  svg.appendChild(el('path',{d:`M ${sx(8)} ${sy(0)} l -14 -8 v16 z`, fill:'var(--chalk)'}));
+  svg.appendChild(el('path',{d:`M ${sx(0)} ${sy(8)} l -8 14 h16 z`, fill:'var(--chalk)'}));
+  const xlab = el('text',{x:sx(8)-6,y:sy(0)+30,fill:'var(--chalk-dim)','font-size':22,'text-anchor':'end'}); xlab.textContent='x';
+  const ylab = el('text',{x:sx(0)+20,y:sy(8)+10,fill:'var(--chalk-dim)','font-size':22}); ylab.textContent='y';
+  svg.appendChild(xlab); svg.appendChild(ylab);
+}
+function drawLine(svg, a, b, color){
+  // clip the infinite line y = a*x + b against the visible x,y ∈ [-8,8] box
+  let tMin=-8, tMax=8;
+  if(a!==0){
+    const t1=(-8-b)/a, t2=(8-b)/a;
+    const lo=Math.min(t1,t2), hi=Math.max(t1,t2);
+    tMin=Math.max(tMin,lo); tMax=Math.min(tMax,hi);
+  } else if(b<-8 || b>8){
+    return; // horizontal line entirely off-screen
+  }
+  if(tMin>tMax) return;
+  svg.appendChild(lineSeg(sx(tMin),sy(a*tMin+b),sx(tMax),sy(a*tMax+b),{stroke:color||'var(--chalk)','stroke-width':3}));
+}
+
+// ---------- SLIDE 1: 考え方 (static) ----------
+function renderIdea(){
+  const svg = document.getElementById('svgIdea');
+  svg.innerHTML = '';
+  drawAxes(svg);
+  drawLine(svg, 1.5, 1, 'var(--yellow)');
+  svg.appendChild(el('circle',{cx:sx(0),cy:sy(1),r:7,fill:'var(--orange)'}));
+  const lb = el('text',{x:sx(0)+16,y:sy(1)-10,fill:'var(--orange)','font-size':17,'font-weight':900}); lb.textContent='切片 b';
+  svg.appendChild(lb);
+  const la = el('text',{x:sx(3.2),y:sy(5.8),fill:'var(--yellow)','font-size':17,'font-weight':900}); la.textContent='傾き a';
+  svg.appendChild(la);
+}
+
+// ---------- SLIDE 2: 切片 (interactive) ----------
+const bInterceptB = document.getElementById('bInterceptB');
+const bReadout = document.getElementById('bReadout');
+function renderB(){
+  const svg = document.getElementById('svgB');
+  svg.innerHTML = '';
+  const a = 1, b = +bInterceptB.value;
+  drawAxes(svg);
+  drawLine(svg, a, b, 'var(--chalk-dim)');
+  svg.appendChild(el('circle',{cx:sx(0),cy:sy(b),r:9,fill:'var(--orange)'}));
+  const lbl = el('text',{x:sx(0)+18,y:sy(b)-16,fill:'var(--orange)','font-size':22,'font-weight':900});
+  lbl.textContent = `(0, ${b})`;
+  svg.appendChild(lbl);
+  const eqStr = b===0 ? 'y＝x' : (b>0 ? `y＝x＋${b}` : `y＝x−${Math.abs(b)}`);
+  bReadout.innerHTML = `${eqStr}<br><span style="color:var(--orange);">切片 b ＝ ${b}</span>`;
+}
+bInterceptB.addEventListener('input', renderB);
+
+// ---------- SLIDE 3: 傾き (interactive, run=1 staircase) ----------
+const aSlopeA = document.getElementById('aSlopeA');
+const aReadout = document.getElementById('aReadout');
+function renderA(){
+  const svg = document.getElementById('svgA');
+  svg.innerHTML = '';
+  const a = +aSlopeA.value, b = 0;
+  drawAxes(svg);
+  drawLine(svg, a, b, 'var(--chalk-dim)');
+  const x0=0, y0=b, x1=1, y1=a+b;
+  // staircase: horizontal (run) then vertical (rise) — this is the 変化の割合(rate of change) diagram
+  svg.appendChild(lineSeg(sx(x0),sy(y0),sx(x1),sy(y0),{stroke:'var(--yellow)','stroke-width':4}));
+  svg.appendChild(lineSeg(sx(x1),sy(y0),sx(x1),sy(y1),{stroke:'var(--yellow)','stroke-width':4}));
+  svg.appendChild(el('circle',{cx:sx(x0),cy:sy(y0),r:8,fill:'var(--cyan)'}));
+  svg.appendChild(el('circle',{cx:sx(x1),cy:sy(y1),r:8,fill:'var(--pink)'}));
+  const runLbl = el('text',{x:(sx(x0)+sx(x1))/2,y:sy(y0)+26,fill:'var(--yellow)','font-size':20,'font-weight':900,'text-anchor':'middle'});
+  runLbl.textContent = 'x：+1';
+  svg.appendChild(runLbl);
+  const riseLbl = el('text',{x:sx(x1)+14,y:(sy(y0)+sy(y1))/2,fill:'var(--yellow)','font-size':20,'font-weight':900});
+  riseLbl.textContent = `y：${a>=0?'+':''}${a}`;
+  svg.appendChild(riseLbl);
+  aReadout.innerHTML = `y＝${a}x<br>変化の割合 a ＝ <span class="frac"><span class="num">yの増加量</span><span class="den">xの増加量</span></span> ＝ <span class="frac"><span class="num">${a}</span><span class="den">1</span></span> ＝ <span style="color:var(--yellow);">${a}</span>`;
+}
+aSlopeA.addEventListener('input', renderA);
+
+// ---------- SLIDE 4: 変化の割合が分数になる場合 (interactive) ----------
+function gcd(x,y){ x=Math.abs(x); y=Math.abs(y); while(y){ [x,y]=[y,x%y]; } return x||1; }
+const fracRun = document.getElementById('fracRun');
+const fracRise = document.getElementById('fracRise');
+const fracReadout = document.getElementById('fracReadout');
+function renderFrac(){
+  const svg = document.getElementById('svgFrac');
+  svg.innerHTML = '';
+  const run = +fracRun.value, rise = +fracRise.value;
+  drawAxes(svg);
+  if(run!==0){
+    drawLine(svg, rise/run, 0, 'var(--chalk-dim)');
+  }
+  svg.appendChild(lineSeg(sx(0),sy(0),sx(run),sy(0),{stroke:'var(--yellow)','stroke-width':4}));
+  svg.appendChild(lineSeg(sx(run),sy(0),sx(run),sy(rise),{stroke:'var(--yellow)','stroke-width':4}));
+  svg.appendChild(el('circle',{cx:sx(0),cy:sy(0),r:8,fill:'var(--cyan)'}));
+  svg.appendChild(el('circle',{cx:sx(run),cy:sy(rise),r:8,fill:'var(--pink)'}));
+  const lA = el('text',{x:sx(0)-16,y:sy(0)+26,fill:'var(--cyan)','font-size':20,'font-weight':900,'text-anchor':'end'}); lA.textContent='A(0, 0)';
+  svg.appendChild(lA);
+  const lB = el('text',{x:sx(run)+12,y:sy(rise)-12,fill:'var(--pink)','font-size':20,'font-weight':900}); lB.textContent=`B(${run}, ${rise})`;
+  svg.appendChild(lB);
+  const runLbl = el('text',{x:(sx(0)+sx(run))/2,y:sy(0)+26,fill:'var(--yellow)','font-size':20,'font-weight':900,'text-anchor':'middle'});
+  runLbl.textContent = `x：+${run}`;
+  svg.appendChild(runLbl);
+  const riseLbl = el('text',{x:sx(run)+14,y:(sy(0)+sy(rise))/2,fill:'var(--yellow)','font-size':20,'font-weight':900});
+  riseLbl.textContent = `y：${rise>=0?'+':''}${rise}`;
+  svg.appendChild(riseLbl);
+
+  const g = gcd(rise, run);
+  const simplified = g>1;
+  const simRise = rise/g, simRun = run/g;
+  let resultHtml = `<span class="frac"><span class="num">${rise}</span><span class="den">${run}</span></span>`;
+  if(simplified){
+    resultHtml += ` ＝ <span class="frac"><span class="num">${simRise}</span><span class="den">${simRun}</span></span>`;
+  }
+  fracReadout.innerHTML = `変化の割合 a ＝ <span class="frac"><span class="num">yの増加量</span><span class="den">xの増加量</span></span> ＝ ${resultHtml}`;
+}
+[fracRun, fracRise].forEach(inp=> inp.addEventListener('input', renderFrac));
+
+// ---------- slide navigation ----------
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+let idx = 0;
+slides.forEach((_,i)=>{ const d = document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d); });
+function show(i){
+  idx = Math.max(0, Math.min(slides.length-1, i));
+  slides.forEach((s,j)=>s.classList.toggle('active', j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
+  document.getElementById('cnt').textContent = idx+1;
+  if(idx===0) renderIdea();
+  if(idx===1) renderB();
+  if(idx===2) renderA();
+  if(idx===3) renderFrac();
+}
+document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
+window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+
+renderIdea();
+show(0);
+</script>
+</body>
+</html>

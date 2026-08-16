@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>方程式とグラフ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.5rem, 3.2vw, 2.4rem); margin: 0 0 .8em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(72vw,760px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .9em; min-width: 260px; max-width: 330px; font-size: clamp(.9rem,1.2vw,1.05rem); }
+.controls label{ color: var(--chalk-dim); font-size:.88em; display:block; margin-bottom:.2em; }
+input[type=range]{ width:100%; accent-color: var(--yellow); }
+.readout{
+  font-family:'Zen Kaku Gothic New',sans-serif; font-weight:900; font-size: clamp(1rem,1.7vw,1.25rem);
+  padding: .6em .8em; border: 1.5px dashed var(--rule); border-radius: 14px; text-align:center; line-height:1.8;
+}
+.caption{ max-width: 680px; text-align:center; color: var(--chalk-dim); font-size: clamp(.9rem,1.4vw,1.05rem); line-height:1.75; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 780px; text-align:left; font-size: clamp(.95rem,1.5vw,1.12rem); line-height:1.8; margin-bottom:1em;
+}
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.7em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(1rem,1.8vw,1.25rem); line-height:1.6; padding: .45em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.frac{ display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 .2em; line-height:1.1; }
+.frac .num{ padding:0 .2em; border-bottom:2px solid currentColor; }
+.frac .den{ padding:0 .2em; }
+.stepline{
+  display:flex; align-items:center; gap:.8em; font-size: clamp(1.05rem,2vw,1.4rem);
+  padding:.7em .2em; border-bottom:1px solid var(--rule);
+}
+.stepline .arrow{ color:var(--chalk-dim); font-size:.85em; flex-shrink:0; }
+.stepline .note{ font-size:.62em; color:var(--chalk-dim); flex-shrink:0; }
+.stepsbox{ display:flex; flex-direction:column; }
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 一次関数</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 6</div>
+
+  <!-- 1: 二元一次方程式のグラフ -->
+  <section class="slide active">
+    <h2 class="disp">① 二元一次方程式のグラフ</h2>
+    <div class="definition-box"><b>ax＋by＝c</b> の形の方程式を、二元一次方程式という。<br>yについて解くと一次関数の式になるので、<b>グラフに表す</b>ことができる。</div>
+    <svg class="diagram" id="svgIdea" viewBox="0 0 900 800"></svg>
+    <div class="caption">2x＋y＝4 は、yについて解くと y＝−2x＋4。これはいつもの一次関数のグラフと同じようにかける。</div>
+  </section>
+
+  <!-- 2: 解き方の例 -->
+  <section class="slide">
+    <h2 class="disp">② 二元一次方程式の解き方（例）</h2>
+    <div class="definition-box">ax＋by＝c を、<b>y＝〜</b> の形に変形する手順を、係数を変えながら確認しよう。</div>
+    <div class="diagram-row">
+      <div class="controls">
+        <div><label for="slA">xの係数 a</label><input type="range" id="slA" min="-5" max="5" step="1" value="2"></div>
+        <div><label for="slB">yの係数 b</label><input type="range" id="slB" min="-5" max="5" step="1" value="1"></div>
+        <div><label for="slC">右辺 c</label><input type="range" id="slC" min="-5" max="5" step="1" value="4"></div>
+      </div>
+      <div class="stepsbox" id="solveSteps" style="max-width:460px; width:100%;"></div>
+    </div>
+    <div class="caption">bが1でないときは、答えが分数になることもある。約分できるときは約分する。b＝0のときは、xだけの式（x＝〜）になる。</div>
+  </section>
+
+  <!-- 3: グラフに表す方法(練習) -->
+  <section class="slide">
+    <h2 class="disp">③ グラフに表す方法</h2>
+    <div class="definition-box">方程式を <b>y＝〜</b> の形に変形してから、グラフをかく。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgConvert" viewBox="0 0 900 800"></svg>
+      <div class="controls">
+        <div><label for="cvA">xの係数 a（ax＋y＝c）</label><input type="range" id="cvA" min="-3" max="3" step="1" value="2"></div>
+        <div><label for="cvC">右辺 c</label><input type="range" id="cvC" min="-6" max="6" step="1" value="4"></div>
+        <div class="readout" id="cvReadout"></div>
+      </div>
+    </div>
+    <div class="caption">aやcを動かすと、方程式も変形後の式もグラフも一緒に変わることを確認しよう。</div>
+  </section>
+
+  <!-- 3: x=定数のグラフ -->
+  <section class="slide">
+    <h2 class="disp">④ x＝定数 のグラフ</h2>
+    <div class="definition-box">yの項がない方程式（例：x＝3）は、<b>y軸に平行な、縦の直線</b>になる。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgVert" viewBox="0 0 900 800"></svg>
+      <div class="controls">
+        <div><label for="vertK">x＝の値</label><input type="range" id="vertK" min="-6" max="6" step="1" value="3"></div>
+        <div class="readout" id="vertReadout"></div>
+      </div>
+    </div>
+    <div class="caption">xの値はどこでも同じ、yの値は何でもよい。だから縦にまっすぐな直線になる。</div>
+  </section>
+
+  <!-- 4: y=定数のグラフ -->
+  <section class="slide">
+    <h2 class="disp">⑤ y＝定数 のグラフ</h2>
+    <div class="definition-box">xの項がない方程式（例：y＝−2）は、<b>x軸に平行な、横の直線</b>になる。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgHoriz" viewBox="0 0 900 800"></svg>
+      <div class="controls">
+        <div><label for="horizK">y＝の値</label><input type="range" id="horizK" min="-6" max="6" step="1" value="-2"></div>
+        <div class="readout" id="horizReadout"></div>
+      </div>
+    </div>
+    <div class="caption">yの値はどこでも同じ、xの値は何でもよい。だから横にまっすぐな直線になる。</div>
+  </section>
+
+  <!-- 5: まとめ -->
+  <section class="slide">
+    <h2 class="disp">⑥ まとめ</h2>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span><span><b>ax＋by＝c</b> は、yについて解けば一次関数のグラフとしてかける。</span></li>
+      <li><span class="mark yellow">◆</span><span><b>x＝定数</b> は、y軸に平行な<b>縦の直線</b>になる。</span></li>
+      <li><span class="mark orange">◆</span><span><b>y＝定数</b> は、x軸に平行な<b>横の直線</b>になる。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+
+<script>
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(svgns, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function lineSeg(x1,y1,x2,y2, extra){ return el('line', Object.assign({x1,y1,x2,y2, stroke:'var(--chalk)', 'stroke-width':2, 'stroke-linecap':'round'}, extra||{})); }
+
+const scale=35, ox=450, oy=420;
+function sx(x){ return ox+x*scale; }
+function sy(y){ return oy-y*scale; }
+
+function drawAxes(svg){
+  for(let i=-8;i<=8;i++){
+    svg.appendChild(lineSeg(sx(i),sy(-8),sx(i),sy(8),{stroke:'var(--rule)','stroke-width':1}));
+    svg.appendChild(lineSeg(sx(-8),sy(i),sx(8),sy(i),{stroke:'var(--rule)','stroke-width':1}));
+  }
+  for(let i=-8;i<=8;i+=2){
+    if(i!==0){
+      const tx = el('text',{x:sx(i),y:sy(0)+26,fill:'var(--chalk-dim)','font-size':18,'text-anchor':'middle'});
+      tx.textContent = i; svg.appendChild(tx);
+      const ty = el('text',{x:sx(0)-14,y:sy(i)+6,fill:'var(--chalk-dim)','font-size':18,'text-anchor':'end'});
+      ty.textContent = i; svg.appendChild(ty);
+    }
+  }
+  const t0 = el('text',{x:sx(0)-14,y:sy(0)+26,fill:'var(--chalk-dim)','font-size':18,'text-anchor':'end'});
+  t0.textContent = '0'; svg.appendChild(t0);
+  svg.appendChild(lineSeg(sx(-8),sy(0),sx(8),sy(0),{'stroke-width':2.5}));
+  svg.appendChild(lineSeg(sx(0),sy(-8),sx(0),sy(8),{'stroke-width':2.5}));
+  svg.appendChild(el('path',{d:`M ${sx(8)} ${sy(0)} l -14 -8 v16 z`, fill:'var(--chalk)'}));
+  svg.appendChild(el('path',{d:`M ${sx(0)} ${sy(8)} l -8 14 h16 z`, fill:'var(--chalk)'}));
+  const xlab = el('text',{x:sx(8)-6,y:sy(0)+30,fill:'var(--chalk-dim)','font-size':20,'text-anchor':'end'}); xlab.textContent='x';
+  const ylab = el('text',{x:sx(0)+20,y:sy(8)+10,fill:'var(--chalk-dim)','font-size':20}); ylab.textContent='y';
+  svg.appendChild(xlab); svg.appendChild(ylab);
+}
+function drawLine(svg, a, b, color){
+  // clip the infinite line y = a*x + b against the visible x,y ∈ [-8,8] box
+  let tMin=-8, tMax=8;
+  if(a!==0){
+    const t1=(-8-b)/a, t2=(8-b)/a;
+    const lo=Math.min(t1,t2), hi=Math.max(t1,t2);
+    tMin=Math.max(tMin,lo); tMax=Math.min(tMax,hi);
+  } else if(b<-8 || b>8){
+    return;
+  }
+  if(tMin>tMax) return;
+  svg.appendChild(lineSeg(sx(tMin),sy(a*tMin+b),sx(tMax),sy(a*tMax+b),{stroke:color||'var(--chalk)','stroke-width':3.5}));
+}
+
+// ---------- SLIDE 1: 二元一次方程式のグラフ (static) ----------
+function renderIdea(){
+  const svg = document.getElementById('svgIdea');
+  svg.innerHTML = '';
+  drawAxes(svg);
+  drawLine(svg, -2, 4, 'var(--yellow)');
+  const lbl = el('text',{x:sx(1.4),y:sy(2.2),fill:'var(--yellow)','font-size':19,'font-weight':900}); lbl.textContent='2x＋y＝4';
+  svg.appendChild(lbl);
+  const lbl2 = el('text',{x:sx(-3.6),y:sy(6.6),fill:'var(--chalk-dim)','font-size':17,'font-weight':900}); lbl2.textContent='y＝−2x＋4';
+  svg.appendChild(lbl2);
+}
+
+// ---------- SLIDE 2: 二元一次方程式の解き方(例) ----------
+function gcd(x,y){ x=Math.abs(x); y=Math.abs(y); while(y){ [x,y]=[y,x%y]; } return x||1; }
+function reduceFrac(num, den){
+  if(den<0){ num=-num; den=-den; }
+  const g = gcd(num,den);
+  return [num/g, den/g];
+}
+function fracHtml(mag, den){
+  return `<span class="frac"><span class="num">${mag}</span><span class="den">${den}</span></span>`;
+}
+// xの項(係数num/den・変数x)を、符号つきの文字列にする。isFirst=trueなら先頭項としての符号にする。
+function xTermHtml(num, den, isFirst){
+  const [n,d] = reduceFrac(num,den);
+  if(n===0) return '';
+  const sign = isFirst ? (n<0?'−':'') : (n<0?'－':'＋');
+  const mag = Math.abs(n);
+  if(d===1){
+    return sign + (mag===1?'':mag) + 'x';
+  }
+  return sign + fracHtml(mag,d) + 'x';
+}
+function constTermHtml(num, den, isFirst){
+  const [n,d] = reduceFrac(num,den);
+  if(n===0) return isFirst ? '0' : '';
+  const sign = isFirst ? (n<0?'−':'') : (n<0?'－':'＋');
+  const mag = Math.abs(n);
+  if(d===1) return sign + mag;
+  return sign + fracHtml(mag,d);
+}
+function fmtInt(n){ return n<0 ? `−${Math.abs(n)}` : `${n}`; }
+// ax+by の左辺、符号つきの文字列（byの項は常に2項目として扱う）
+function axByHtml(a,b){
+  const bTerm = (()=>{
+    if(b===0) return '';
+    const sign = b<0 ? '－' : '＋';
+    const mag = Math.abs(b);
+    return sign + (mag===1?'':mag) + 'y';
+  })();
+  return `${xTermHtml(a,1,true)}${bTerm}`;
+}
+const slA = document.getElementById('slA');
+const slB = document.getElementById('slB');
+const slC = document.getElementById('slC');
+const solveSteps = document.getElementById('solveSteps');
+function renderSolve(){
+  const a = +slA.value, b = +slB.value, c = +slC.value;
+  if(b===0){
+    if(a===0){
+      solveSteps.innerHTML = `
+        <div class="stepline"><span class="note">与えられた式</span></div>
+        <div class="stepline">0＝${fmtInt(c)}</div>
+        <div class="stepline" style="color:var(--orange);">a＝0、b＝0のときは、xもyも消えてしまうので式にならない。</div>
+      `;
+      return;
+    }
+    const step1 = `${axByHtml(a,0)}＝${fmtInt(c)}`;
+    const [n,d] = reduceFrac(c,a);
+    const xValStr = d===1 ? fmtInt(n) : `${n<0?'−':''}${fracHtml(Math.abs(n),d)}`;
+    solveSteps.innerHTML = `
+      <div class="stepline"><span class="note">与えられた式</span></div>
+      <div class="stepline">${step1}</div>
+      <div class="stepline"><span class="arrow">↓ yの項がないので、そのまま両辺を${a}で割る</span></div>
+      <div class="stepline" style="color:var(--yellow); font-weight:900;">x＝${xValStr}</div>
+    `;
+    return;
+  }
+  const step1 = `${axByHtml(a,b)}＝${fmtInt(c)}`;
+  const step2 = `${b===1?'y':(b===-1?'−y':`${b}y`)}＝${xTermHtml(-a,1,true)}${constTermHtml(c,1,false)}`;
+  const step3 = `y＝${xTermHtml(-a,b,true)}${constTermHtml(c,b,false)}`;
+  solveSteps.innerHTML = `
+    <div class="stepline"><span class="note">与えられた式</span></div>
+    <div class="stepline">${step1}</div>
+    <div class="stepline"><span class="arrow">↓ xの項を右辺に移項</span></div>
+    <div class="stepline">${step2}</div>
+    <div class="stepline"><span class="arrow">↓ 両辺を${b}で割る</span></div>
+    <div class="stepline" style="color:var(--yellow); font-weight:900;">${step3}</div>
+  `;
+}
+[slA, slB, slC].forEach(inp=> inp.addEventListener('input', renderSolve));
+
+// ---------- SLIDE 3: グラフに表す方法 (interactive: ax+y=c) ----------
+const cvA = document.getElementById('cvA');
+const cvC = document.getElementById('cvC');
+const cvReadout = document.getElementById('cvReadout');
+function renderConvert(){
+  const svg = document.getElementById('svgConvert');
+  svg.innerHTML = '';
+  const a = +cvA.value, c = +cvC.value;
+  const slopeA = -a, interceptB = c;
+  drawAxes(svg);
+  drawLine(svg, slopeA, interceptB, 'var(--yellow)');
+  function coefTerm(n){
+    if(n===0) return '';
+    if(n===1) return 'x';
+    if(n===-1) return '−x';
+    return n>0 ? `${n}x` : `−${Math.abs(n)}x`;
+  }
+  function fmtNum(n){ return n<0 ? `−${Math.abs(n)}` : `${n}`; }
+  const eqStr = a===0 ? `y＝${fmtNum(c)}` : `${coefTerm(a)}＋y＝${fmtNum(c)}`;
+  let rightSide;
+  if(slopeA===0){
+    rightSide = fmtNum(interceptB);
+  } else if(interceptB===0){
+    rightSide = coefTerm(slopeA);
+  } else {
+    rightSide = `${coefTerm(slopeA)}${interceptB>0?'＋':'－'}${Math.abs(interceptB)}`;
+  }
+  cvReadout.innerHTML = `${eqStr}<br>↓ yについて解く<br><span style="color:var(--yellow);">y＝${rightSide}</span>`;
+}
+[cvA, cvC].forEach(inp=> inp.addEventListener('input', renderConvert));
+
+// ---------- SLIDE 3: x=定数 (interactive, vertical line) ----------
+const vertK = document.getElementById('vertK');
+const vertReadout = document.getElementById('vertReadout');
+function renderVert(){
+  const svg = document.getElementById('svgVert');
+  svg.innerHTML = '';
+  const k = +vertK.value;
+  drawAxes(svg);
+  svg.appendChild(lineSeg(sx(k),sy(-8),sx(k),sy(8),{stroke:'var(--orange)','stroke-width':3.5}));
+  [-4,-2,0,2,4].forEach(y=>{
+    svg.appendChild(el('circle',{cx:sx(k),cy:sy(y),r:5,fill:'var(--orange)'}));
+  });
+  const lbl = el('text',{x:sx(k)+14,y:sy(6.5),fill:'var(--orange)','font-size':20,'font-weight':900}); lbl.textContent=`x＝${k}`;
+  svg.appendChild(lbl);
+  vertReadout.innerHTML = `<span style="color:var(--orange);">x ＝ ${k}</span><br>（yはどんな値でもよい）`;
+}
+vertK.addEventListener('input', renderVert);
+
+// ---------- SLIDE 4: y=定数 (interactive, horizontal line) ----------
+const horizK = document.getElementById('horizK');
+const horizReadout = document.getElementById('horizReadout');
+function renderHoriz(){
+  const svg = document.getElementById('svgHoriz');
+  svg.innerHTML = '';
+  const k = +horizK.value;
+  drawAxes(svg);
+  svg.appendChild(lineSeg(sx(-8),sy(k),sx(8),sy(k),{stroke:'var(--cyan)','stroke-width':3.5}));
+  [-4,-2,0,2,4].forEach(x=>{
+    svg.appendChild(el('circle',{cx:sx(x),cy:sy(k),r:5,fill:'var(--cyan)'}));
+  });
+  const lbl = el('text',{x:sx(5.3),y:sy(k)-14,fill:'var(--cyan)','font-size':20,'font-weight':900}); lbl.textContent=`y＝${k}`;
+  svg.appendChild(lbl);
+  horizReadout.innerHTML = `<span style="color:var(--cyan);">y ＝ ${k}</span><br>（xはどんな値でもよい）`;
+}
+horizK.addEventListener('input', renderHoriz);
+
+// ---------- slide navigation ----------
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+let idx = 0;
+slides.forEach((_,i)=>{ const d = document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d); });
+function show(i){
+  idx = Math.max(0, Math.min(slides.length-1, i));
+  slides.forEach((s,j)=>s.classList.toggle('active', j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
+  document.getElementById('cnt').textContent = idx+1;
+  if(idx===0) renderIdea();
+  if(idx===1) renderSolve();
+  if(idx===2) renderConvert();
+  if(idx===3) renderVert();
+  if(idx===4) renderHoriz();
+}
+document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
+window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+
+renderIdea();
+show(0);
+</script>
+</body>
+</html>

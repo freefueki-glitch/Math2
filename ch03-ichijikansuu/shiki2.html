@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>一次関数の式を求めよう2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.5rem, 3.2vw, 2.4rem); margin: 0 0 .8em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:stretch; justify-content:center; gap: 2.4vw; width:100%; flex-wrap:wrap; }
+.caption{ max-width: 700px; text-align:center; color: var(--chalk-dim); font-size: clamp(.9rem,1.4vw,1.05rem); line-height:1.75; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 780px; text-align:left; font-size: clamp(.95rem,1.5vw,1.12rem); line-height:1.8; margin-bottom:1em;
+}
+.proof-step{
+  display:flex; align-items:flex-start; gap:.8em; font-size: clamp(.92rem,1.5vw,1.08rem);
+  line-height:1.7; padding:.6em .2em; border-bottom:1px solid var(--rule);
+}
+.stepnum{
+  flex-shrink:0; width:1.8em; height:1.8em; border-radius:50%; background: var(--yellow); color:#20301f;
+  font-weight:900; font-size:1em; display:flex; align-items:center; justify-content:center;
+}
+.examplebox{
+  border:1px solid var(--rule); border-radius:12px; padding:1.1em 1.4em; max-width:400px; width:100%;
+  text-align:left; font-size: clamp(.95rem,1.5vw,1.1rem); line-height:2;
+}
+.examplebox b{ color: var(--yellow); }
+.stepsbox{ display:flex; flex-direction:column; gap:.2em; max-width:420px; width:100%; }
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.7em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(1rem,1.8vw,1.25rem); line-height:1.6; padding: .45em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 一次関数</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 6</div>
+
+  <!-- 1: 考え方 -->
+  <section class="slide active">
+    <h2 class="disp">① グラフを使わずに式を求める</h2>
+    <div class="definition-box">一次関数の式 <b>y＝ax＋b</b> は、次のいずれかが分かれば、グラフをかかなくても求めることができる。</div>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span><span><b>傾きaと、通る1点の座標</b>がわかっているとき</span></li>
+      <li><span class="mark pink">◆</span><span><b>切片bと、通る1点の座標</b>がわかっているとき</span></li>
+      <li><span class="mark yellow">◆</span><span><b>2点の座標</b>がわかっているとき</span></li>
+    </ul>
+    <div class="caption">どの場合も、代入して式を組み立てていく。この3つのパターンを練習しよう。</div>
+  </section>
+
+  <!-- 2: 傾きと1点の座標 -->
+  <section class="slide">
+    <h2 class="disp">② 傾きと1点の座標がわかっているとき</h2>
+    <div class="diagram-row">
+      <div class="stepsbox">
+        <div class="proof-step"><span class="stepnum">1</span><span>y＝ax＋b に、わかっている<b>傾きa</b>と<b>通る点の座標</b>を代入する。</span></div>
+        <div class="proof-step"><span class="stepnum">2</span><span>bについての方程式を解く。</span></div>
+        <div class="proof-step"><span class="stepnum">3</span><span>求めた a と b を、y＝ax＋b にあてはめる。</span></div>
+      </div>
+      <div class="examplebox">
+        <b>例題</b><br>
+        傾きが3で、点(2, 4)を通る一次関数の式を求めよう。<br><br>
+        y＝3x＋b に x＝2, y＝4 を代入する<br>
+        4＝3×2＋b<br>
+        4＝6＋b<br>
+        b＝4−6＝<b>−2</b><br><br>
+        → 式は <b>y＝3x−2</b>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3: 切片と1点の座標 -->
+  <section class="slide">
+    <h2 class="disp">③ 切片と1点の座標がわかっているとき</h2>
+    <div class="diagram-row">
+      <div class="stepsbox">
+        <div class="proof-step"><span class="stepnum">1</span><span>わかっている<b>切片b</b>を、y＝ax＋b の b にそのまま入れる。</span></div>
+        <div class="proof-step"><span class="stepnum">2</span><span>通る<b>1点の座標</b>を代入する（bはすでにわかっているので、<b>aだけの方程式</b>になる）。</span></div>
+        <div class="proof-step"><span class="stepnum">3</span><span>aについての方程式を解く。</span></div>
+        <div class="proof-step"><span class="stepnum">4</span><span>求めた a と b を、y＝ax＋b にあてはめる。</span></div>
+      </div>
+      <div class="examplebox">
+        <b>例題</b><br>
+        切片が1で、点(3, 7)を通る一次関数の式を求めよう。<br><br>
+        y＝ax＋1 に x＝3, y＝7 を代入する<br>
+        7＝3a＋1<br>
+        3a＝7−1＝6<br>
+        a＝<b>2</b><br><br>
+        → 式は <b>y＝2x＋1</b>
+      </div>
+    </div>
+    <div class="caption">切片bはそのまま使えるので、残りは1つの方程式でaだけを求めればよい。</div>
+  </section>
+
+  <!-- 4: 2点の座標 -->
+  <section class="slide">
+    <h2 class="disp">④ 2点の座標（変化の割合を使う方法）</h2>
+    <div class="diagram-row">
+      <div class="stepsbox">
+        <div class="proof-step"><span class="stepnum">1</span><span>2点の座標から、<br><b>a ＝（yの増加量）÷（xの増加量）</b> で傾きを求める。</span></div>
+        <div class="proof-step"><span class="stepnum">2</span><span>y＝ax＋b に、求めた a とどちらか<b>1点の座標</b>を代入する。</span></div>
+        <div class="proof-step"><span class="stepnum">3</span><span>bについての方程式を解く。</span></div>
+        <div class="proof-step"><span class="stepnum">4</span><span>求めた a と b を、y＝ax＋b にあてはめる。</span></div>
+      </div>
+      <div class="examplebox">
+        <b>例題</b><br>
+        2点 (1, 5)、(3, 9) を通る一次関数の式を求めよう。<br><br>
+        a ＝ (9−5)÷(3−1) ＝ 4÷2 ＝ <b>2</b><br><br>
+        y＝2x＋b に x＝1, y＝5 を代入する<br>
+        5＝2×1＋b<br>
+        b＝5−2＝<b>3</b><br><br>
+        → 式は <b>y＝2x＋3</b>
+      </div>
+    </div>
+    <div class="caption">代入する点は、(1, 5)でも(3, 9)でもどちらでもよい。同じ式になることを確かめてみよう。</div>
+  </section>
+
+  <!-- 4: 2点の座標(連立方程式) -->
+  <section class="slide">
+    <h2 class="disp">⑤ 2点の座標（連立方程式を使う方法）</h2>
+    <div class="diagram-row">
+      <div class="stepsbox">
+        <div class="proof-step"><span class="stepnum">1</span><span>2点の座標をそれぞれ y＝ax＋b に代入し、<b>2つの式</b>をつくる。</span></div>
+        <div class="proof-step"><span class="stepnum">2</span><span>できた2つの式を、<b>連立方程式</b>として解く（ひき算でaかbを消去する）。</span></div>
+        <div class="proof-step"><span class="stepnum">3</span><span>求めた a を、どちらかの式に代入して b を求める。</span></div>
+        <div class="proof-step"><span class="stepnum">4</span><span>求めた a と b を、y＝ax＋b にあてはめる。</span></div>
+      </div>
+      <div class="examplebox">
+        <b>例題</b><br>
+        2点 (1, 5)、(3, 9) を通る一次関数の式を求めよう。<br><br>
+        (1, 5)を代入：5＝a＋b　…①<br>
+        (3, 9)を代入：9＝3a＋b　…②<br><br>
+        ②−①：4＝2a → <b>a＝2</b><br>
+        ①に代入：5＝2＋b → <b>b＝3</b><br><br>
+        → 式は <b>y＝2x＋3</b>
+      </div>
+    </div>
+    <div class="caption">変化の割合を使う方法と同じ式になることに注目しよう。どちらの方法で解いてもよい。</div>
+  </section>
+
+  <!-- 5: まとめ -->
+  <section class="slide">
+    <h2 class="disp">⑥ まとめ</h2>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span><span><b>傾きaと1点の座標</b>がわかっているとき → y＝ax＋bに代入してbを求める。</span></li>
+      <li><span class="mark pink">◆</span><span><b>切片bと1点の座標</b>がわかっているとき → bをそのまま使い、1点の座標を代入してaを求める。</span></li>
+      <li><span class="mark yellow">◆</span><span><b>2点の座標</b>がわかっているとき → <b>変化の割合</b>でaを求めてから代入する方法と、<b>連立方程式</b>で解く方法の2通りがある。</span></li>
+      <li><span class="mark orange">◆</span><span>どの場合も、最後は <b>y＝ax＋b</b> の形にまとめる。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+let idx = 0;
+slides.forEach((_,i)=>{ const d = document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d); });
+function show(i){
+  idx = Math.max(0, Math.min(slides.length-1, i));
+  slides.forEach((s,j)=>s.classList.toggle('active', j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
+  document.getElementById('cnt').textContent = idx+1;
+}
+document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
+window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+
+show(0);
+</script>
+</body>
+</html>
