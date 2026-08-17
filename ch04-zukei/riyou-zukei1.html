@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>図形の性質の利用</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.35rem, 2.9vw, 2.1rem); margin: 0 0 .7em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(56vw,600px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .5em; min-width: 260px; max-width: 380px; font-size: clamp(.88rem,1.2vw,1rem); }
+.caption{ max-width: 700px; text-align:center; color: var(--chalk-dim); font-size: clamp(.86rem,1.25vw,1rem); line-height:1.7; margin-top:.5em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .75em 1.1em;
+  border-radius: 4px; max-width: 780px; text-align:left; font-size: clamp(.88rem,1.3vw,1.02rem); line-height:1.75; margin-bottom:.7em;
+}
+.proof-step{
+  display:flex; align-items:flex-start; gap:.7em; font-size: clamp(.84rem,1.2vw,.96rem);
+  line-height:1.6; padding:.5em .2em; border-bottom:1px solid var(--rule);
+}
+.stepnum{
+  flex-shrink:0; width:1.6em; height:1.6em; border-radius:50%; background: var(--yellow); color:#20301f;
+  font-weight:900; font-size:.85em; display:flex; align-items:center; justify-content:center;
+}
+.proof-step.dstep{ opacity:.35; transition: opacity .2s ease; }
+.proof-step.dstep.on{ opacity:1; }
+.proof-step.dstep.on .stepnum{ background: var(--orange); }
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.55em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(.95rem,1.6vw,1.15rem); line-height:1.55; padding: .35em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.section-tag{
+  font-family:'Yomogi',sans-serif; font-size: clamp(.85rem,1.4vw,1rem); color: var(--chalk-dim);
+  border:1px solid var(--rule); border-radius:999px; padding:.3em 1em; margin-bottom:.8em;
+}
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.45em; flex-wrap:wrap; justify-content:center; max-width:70vw; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; z-index:10; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; z-index:10; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; z-index:10; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 図形の性質</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 7</div>
+
+  <!-- 1: くさび形の角(問題) -->
+  <section class="slide active">
+    <div class="section-tag">くさび形の角</div>
+    <h2 class="disp">① くさび形の角を求めよう</h2>
+    <div class="definition-box">下のような、一部がへこんだ形（くさび形）で、印をつけた角xの大きさを求めたい。∠A＝50°、∠B＝60°、∠C＝45°とする。</div>
+    <svg class="diagram" id="svgIntro" viewBox="0 0 900 560"></svg>
+    <div class="caption">このあと、3つの方法でxの求め方を確認しよう。</div>
+  </section>
+
+  <!-- 2: 方法1 -->
+  <section class="slide">
+    <div class="section-tag">くさび形の角</div>
+    <h2 class="disp">② 方法1：辺を延長して外角を2回使う</h2>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgM1" viewBox="0 0 900 560" style="width:min(48vw,520px);"></svg>
+      <div class="controls">
+        <div class="proof-step"><span class="stepnum">1</span><span>BDを延長し、ACとの交点をEとする。</span></div>
+        <div class="proof-step"><span class="stepnum">2</span><span>△ABEで、外角の性質より<br>∠DEC＝∠A＋∠B＝50＋60＝110°</span></div>
+        <div class="proof-step"><span class="stepnum">3</span><span>△DECで、外角の性質より<br>x＝∠DEC＋∠C＝110＋45＝<b style="color:var(--yellow);">155°</b></span></div>
+      </div>
+    </div>
+    <div class="caption">外角の性質（外角＝となり合わない2つの内角の和）を、2つの三角形で続けて使う方法。</div>
+  </section>
+
+  <!-- 3: 方法2 -->
+  <section class="slide">
+    <div class="section-tag">くさび形の角</div>
+    <h2 class="disp">③ 方法2：対角線を引いて外角を2回使う</h2>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgM2" viewBox="0 0 900 560" style="width:min(48vw,520px);"></svg>
+      <div class="controls">
+        <div class="proof-step"><span class="stepnum">1</span><span>対角線ADを引き、Dの先へ延長した点をD'とする。</span></div>
+        <div class="proof-step"><span class="stepnum">2</span><span>△ABDで、外角の性質より<br>∠BDD'＝∠BAD＋∠B</span></div>
+        <div class="proof-step"><span class="stepnum">3</span><span>△ACDで、外角の性質より<br>∠CDD'＝∠CAD＋∠C</span></div>
+        <div class="proof-step"><span class="stepnum">4</span><span>x＝∠BDD'＋∠CDD'＝(∠BAD＋∠CAD)＋∠B＋∠C＝∠A＋∠B＋∠C＝<b style="color:var(--yellow);">155°</b></span></div>
+      </div>
+    </div>
+    <div class="caption">対角線ADを延長して、2つの三角形それぞれで外角の性質を使う方法。</div>
+  </section>
+
+  <!-- 4: 方法3 -->
+  <section class="slide">
+    <div class="section-tag">くさび形の角</div>
+    <h2 class="disp">④ 方法3：対角線を引いて内角の和を使う</h2>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgM3" viewBox="0 0 900 560" style="width:min(48vw,520px);"></svg>
+      <div class="controls">
+        <div class="proof-step"><span class="stepnum">1</span><span>対角線ADを引く。</span></div>
+        <div class="proof-step"><span class="stepnum">2</span><span>△ABDの内角の和より ∠ADB＝180－∠BAD－∠B</span></div>
+        <div class="proof-step"><span class="stepnum">3</span><span>△ACDの内角の和より ∠ADC＝180－∠CAD－∠C</span></div>
+        <div class="proof-step"><span class="stepnum">4</span><span>∠ADB＋∠ADC＝360－∠A－∠B－∠C（xの反対側の角）</span></div>
+        <div class="proof-step"><span class="stepnum">5</span><span>x＝360－(360－∠A－∠B－∠C)＝∠A＋∠B＋∠C＝<b style="color:var(--yellow);">155°</b></span></div>
+      </div>
+    </div>
+    <div class="caption">3つの方法とも同じ答え155°になる。どの方法で解いてもよい。</div>
+  </section>
+
+  <!-- 5: 合同を使って距離を求める(考え方) -->
+  <section class="slide">
+    <div class="section-tag">合同の利用</div>
+    <h2 class="disp">⑤ 合同を使って距離を求める</h2>
+    <div class="definition-box">池や建物などにじゃまされて、直接はかれない2点A、B間の距離を、三角形の合同を使って求める方法を考えよう。</div>
+    <svg class="diagram" id="svgDist1" viewBox="0 0 900 560"></svg>
+    <div class="caption">AB間には池があって、直接ものさしで測ることができない。</div>
+  </section>
+
+  <!-- 6: 合同を使って距離を求める(方法) -->
+  <section class="slide">
+    <div class="section-tag">合同の利用</div>
+    <h2 class="disp">⑥ 測れる場所に置きかえる</h2>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgDist2" viewBox="0 0 900 560" style="width:min(48vw,520px);"></svg>
+      <div class="controls">
+        <div><label for="distStep">作図の工程をスライダーで進める</label><input type="range" id="distStep" min="1" max="5" step="1" value="1"></div>
+        <div class="proof-step dstep" id="dstep1"><span class="stepnum">1</span><span>AB間が見える点Pをとる。</span></div>
+        <div class="proof-step dstep" id="dstep2"><span class="stepnum">2</span><span>APを延長し、AP＝PA'となる点A'をとる。<br>BPを延長し、BP＝PB'となる点B'をとる。</span></div>
+        <div class="proof-step dstep" id="dstep3"><span class="stepnum">3</span><span>対頂角より ∠APB＝∠A'PB'</span></div>
+        <div class="proof-step dstep" id="dstep4"><span class="stepnum">4</span><span>AP＝A'P、BP＝B'P、その間の角も等しいので、<br><b style="color:var(--yellow);">△APB≡△A'PB'</b></span></div>
+        <div class="proof-step dstep" id="dstep5"><span class="stepnum">5</span><span>対応する辺は等しいので<b style="color:var(--yellow);">AB＝A'B'</b>。A'B'は池の外なので直接測れる。</span></div>
+      </div>
+    </div>
+    <div class="caption">直接測れない距離を、合同な三角形を使って「測れる場所」に置きかえる考え方。スライダーを動かして、作図が1つずつできあがる様子を確認しよう。</div>
+  </section>
+
+  <!-- 7: まとめ -->
+  <section class="slide">
+    <h2 class="disp">⑦ まとめ</h2>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span><span>くさび形の角xは、<b>x＝∠A＋∠B＋∠C</b>（外側の3つの角の和）で求められる。</span></li>
+      <li><span class="mark yellow">◆</span><span>求め方には、<b>外角の性質を使う方法</b>と<b>内角の和を使う方法</b>など、いくつかのパターンがある。</span></li>
+      <li><span class="mark orange">◆</span><span>直接測れない距離は、<b>三角形の合同</b>を使って、測れる場所の長さに置きかえられる。</span></li>
+      <li><span class="mark pink">◆</span><span>対頂角と2組の辺を使うと、<b>2組の辺とその間の角</b>の合同条件が使える。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+
+<script>
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(svgns, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function lineSeg(x1,y1,x2,y2, extra){ return el('line', Object.assign({x1,y1,x2,y2, stroke:'var(--chalk)', 'stroke-width':2.5, 'stroke-linecap':'round'}, extra||{})); }
+function polar(cx,cy,r,deg){ const a=deg*Math.PI/180; return [cx+r*Math.cos(a), cy+r*Math.sin(a)]; }
+function wedgePath(cx,cy,r,startDeg,endDeg){
+  const [x1,y1]=polar(cx,cy,r,startDeg), [x2,y2]=polar(cx,cy,r,endDeg);
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
+}
+function angleArc(svg, V, N1, N2, r, color, label){
+  const a1=Math.atan2(N1[1]-V[1],N1[0]-V[0])*180/Math.PI;
+  const a2=Math.atan2(N2[1]-V[1],N2[0]-V[0])*180/Math.PI;
+  let start=a1, diff=((a2-a1)%360+360)%360;
+  if(diff>180){ start=a2; diff=360-diff; }
+  const end=start+diff;
+  svg.appendChild(el('path',{d:wedgePath(V[0],V[1],r,start,end), fill:color, opacity:0.5, stroke:color, 'stroke-width':2}));
+  if(label){
+    const mid=(start+end)/2, lr=r+22;
+    const [lx,ly]=polar(V[0],V[1],lr,mid);
+    const t=el('text',{x:lx,y:ly,fill:color,'font-size':16,'font-weight':900,'text-anchor':'middle','dominant-baseline':'middle'});
+    t.textContent=label;
+    svg.appendChild(t);
+  }
+}
+function vlabel(svg, p, dx, dy, text, color, size){
+  const t=el('text',{x:p[0]+dx,y:p[1]+dy,fill:color||'var(--chalk-dim)','font-size':size||16,'font-weight':700});
+  t.textContent=text;
+  svg.appendChild(t);
+}
+
+// ---------- くさび形 shared geometry (schematic, not-to-scale) ----------
+const A=[450,110], B=[190,430], C=[710,430], D=[450,300];
+function drawDartOutline(svg){
+  const d = `M ${A[0]} ${A[1]} L ${B[0]} ${B[1]} L ${D[0]} ${D[1]} L ${C[0]} ${C[1]} Z`;
+  svg.appendChild(el('path',{d, fill:'rgba(242,240,230,0.04)', stroke:'var(--chalk)', 'stroke-width':3, 'stroke-linejoin':'round'}));
+  [['A',A],['B',B],['C',C],['D',D]].forEach(([name,p])=>{
+    svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:5,fill:'var(--chalk)'}));
+  });
+  vlabel(svg,A,-10,-16,'A','var(--chalk)',20);
+  vlabel(svg,B,-28,10,'B','var(--chalk)',20);
+  vlabel(svg,C,14,10,'C','var(--chalk)',20);
+}
+
+// ---------- SLIDE 1: 問題 ----------
+function renderIntro(){
+  const svg = document.getElementById('svgIntro');
+  svg.innerHTML='';
+  drawDartOutline(svg);
+  angleArc(svg, A, B, C, 46, 'var(--cyan)', '50°');
+  angleArc(svg, B, A, D, 40, 'var(--pink)', '60°');
+  angleArc(svg, C, D, A, 40, 'var(--orange)', '45°');
+  angleArc(svg, D, C, B, 40, 'var(--yellow)', 'x');
+  vlabel(svg,D,10,-14,'D','var(--chalk)',20);
+}
+
+// ---------- SLIDE 2: 方法1(BD延長→ACとの交点E) ----------
+function renderM1(){
+  const svg = document.getElementById('svgM1');
+  svg.innerHTML='';
+  drawDartOutline(svg);
+  vlabel(svg,D,10,-14,'D','var(--chalk)',20);
+  // E = intersection of line BD extended with line AC
+  function intersect(P1,P2,P3,P4){
+    const a1=P2[1]-P1[1], b1=P1[0]-P2[0], c1=a1*P1[0]+b1*P1[1];
+    const a2=P4[1]-P3[1], b2=P3[0]-P4[0], c2=a2*P3[0]+b2*P3[1];
+    const det=a1*b2-a2*b1;
+    return [(b2*c1-b1*c2)/det,(a1*c2-a2*c1)/det];
+  }
+  const E = intersect(B,D,A,C);
+  svg.appendChild(lineSeg(D[0],D[1],E[0],E[1],{stroke:'var(--rule)','stroke-width':2,'stroke-dasharray':'4 5'}));
+  svg.appendChild(el('circle',{cx:E[0],cy:E[1],r:5,fill:'var(--chalk)'}));
+  vlabel(svg,E,10,-10,'E','var(--chalk)',18);
+  angleArc(svg, E, D, C, 34, 'var(--pink)', '∠DEC');
+  angleArc(svg, D, C, B, 40, 'var(--yellow)', 'x');
+  angleArc(svg, C, D, A, 34, 'var(--orange)', 'C');
+}
+
+// ---------- SLIDE 3: 方法2(AD延長) ----------
+function renderM2(){
+  const svg = document.getElementById('svgM2');
+  svg.innerHTML='';
+  drawDartOutline(svg);
+  vlabel(svg,D,10,-14,'D','var(--chalk)',20);
+  const dirx=D[0]-A[0], diry=D[1]-A[1]; const len=Math.hypot(dirx,diry);
+  const Dp=[D[0]+dirx/len*70, D[1]+diry/len*70];
+  svg.appendChild(lineSeg(A[0],A[1],Dp[0],Dp[1],{stroke:'var(--rule)','stroke-width':2,'stroke-dasharray':'4 5'}));
+  vlabel(svg,Dp,6,4,"D'",'var(--chalk-dim)',16);
+  angleArc(svg, D, B, Dp, 34, 'var(--cyan)', '');
+  angleArc(svg, D, Dp, C, 34, 'var(--pink)', '');
+  vlabel(svg,[D[0]-70,D[1]+10],0,0,'∠BDD\'','var(--cyan)',14);
+  vlabel(svg,[D[0]+40,D[1]+10],0,0,'∠D\'DC','var(--pink)',14);
+}
+
+// ---------- SLIDE 4: 方法3(対角線ADのみ) ----------
+function renderM3(){
+  const svg = document.getElementById('svgM3');
+  svg.innerHTML='';
+  drawDartOutline(svg);
+  vlabel(svg,D,10,-14,'D','var(--chalk)',20);
+  svg.appendChild(lineSeg(A[0],A[1],D[0],D[1],{stroke:'var(--rule)','stroke-width':2,'stroke-dasharray':'4 5'}));
+  angleArc(svg, D, A, B, 34, 'var(--cyan)', '');
+  angleArc(svg, D, C, A, 34, 'var(--pink)', '');
+  vlabel(svg,[D[0]-70,D[1]-10],0,0,'∠ADB','var(--cyan)',14);
+  vlabel(svg,[D[0]+30,D[1]-10],0,0,'∠ADC','var(--pink)',14);
+}
+
+// ---------- SLIDE 5: 距離(問題) ----------
+function renderDist1(){
+  const svg = document.getElementById('svgDist1');
+  svg.innerHTML='';
+  const Ap=[220,180], Bp=[680,340];
+  // pond shape
+  svg.appendChild(el('ellipse',{cx:450,cy:280,rx:220,ry:110,fill:'rgba(126,200,227,0.15)',stroke:'var(--cyan)','stroke-width':2,'stroke-dasharray':'5 6'}));
+  svg.appendChild(el('circle',{cx:Ap[0],cy:Ap[1],r:6,fill:'var(--yellow)'}));
+  svg.appendChild(el('circle',{cx:Bp[0],cy:Bp[1],r:6,fill:'var(--yellow)'}));
+  svg.appendChild(lineSeg(Ap[0],Ap[1],Bp[0],Bp[1],{stroke:'var(--yellow)','stroke-width':2.5,'stroke-dasharray':'6 6'}));
+  vlabel(svg,Ap,-26,-14,'A','var(--yellow)',22);
+  vlabel(svg,Bp,14,10,'B','var(--yellow)',22);
+  vlabel(svg,[450,240],-18,0,'池','var(--cyan)',18);
+}
+
+// ---------- SLIDE 6: 距離(方法) ----------
+function tickMarks(svg, p1, p2, count, color){
+  const mx=(p1[0]+p2[0])/2, my=(p1[1]+p2[1])/2;
+  const dx=p2[0]-p1[0], dy=p2[1]-p1[1];
+  const len=Math.hypot(dx,dy);
+  const ux=dx/len, uy=dy/len, px=-uy, py=ux;
+  const spacing=7, tickLen=13;
+  const total=(count-1)*spacing;
+  for(let i=0;i<count;i++){
+    const off=-total/2+i*spacing;
+    const cx=mx+ux*off, cy=my+uy*off;
+    const x1=cx+px*tickLen/2, y1=cy+py*tickLen/2;
+    const x2=cx-px*tickLen/2, y2=cy-py*tickLen/2;
+    svg.appendChild(lineSeg(x1,y1,x2,y2,{stroke:color,'stroke-width':2.5}));
+  }
+}
+const distStep = document.getElementById('distStep');
+function renderDist2(){
+  const step = +distStep.value;
+  for(let i=1;i<=5;i++){
+    document.getElementById('dstep'+i).classList.toggle('on', i<=step);
+  }
+  const svg = document.getElementById('svgDist2');
+  svg.innerHTML='';
+  const Ap=[200,150], Bp=[650,350], P=[393,323];
+  svg.appendChild(el('ellipse',{cx:425,cy:250,rx:140,ry:70,fill:'rgba(126,200,227,0.12)',stroke:'var(--cyan)','stroke-width':1.5,'stroke-dasharray':'5 6'}));
+  const ApPrime = [2*P[0]-Ap[0], 2*P[1]-Ap[1]];
+  const BpPrime = [2*P[0]-Bp[0], 2*P[1]-Bp[1]];
+
+  // step 1: A, B, P only
+  svg.appendChild(lineSeg(Ap[0],Ap[1],Bp[0],Bp[1],{stroke:'var(--yellow)','stroke-width':2,'stroke-dasharray':'5 6'}));
+  [Ap,Bp,P].forEach(p=>svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:5,fill:'var(--chalk)'})));
+  vlabel(svg,Ap,-24,-12,'A','var(--yellow)',18);
+  vlabel(svg,Bp,12,8,'B','var(--yellow)',18);
+  vlabel(svg,P,10,-10,'P','var(--chalk)',18);
+
+  if(step>=2){
+    // extend AP to A', BP to B'
+    svg.appendChild(lineSeg(Ap[0],Ap[1],ApPrime[0],ApPrime[1],{stroke:'var(--chalk-dim)','stroke-width':2}));
+    svg.appendChild(lineSeg(Bp[0],Bp[1],BpPrime[0],BpPrime[1],{stroke:'var(--chalk-dim)','stroke-width':2}));
+    svg.appendChild(el('circle',{cx:ApPrime[0],cy:ApPrime[1],r:5,fill:'var(--chalk)'}));
+    svg.appendChild(el('circle',{cx:BpPrime[0],cy:BpPrime[1],r:5,fill:'var(--chalk)'}));
+    vlabel(svg,ApPrime,10,4,"A'",'var(--orange)',18);
+    vlabel(svg,BpPrime,-26,10,"B'",'var(--orange)',18);
+    tickMarks(svg, Ap, P, 1, 'var(--cyan)');
+    tickMarks(svg, P, ApPrime, 1, 'var(--cyan)');
+    tickMarks(svg, Bp, P, 2, 'var(--pink)');
+    tickMarks(svg, P, BpPrime, 2, 'var(--pink)');
+  }
+  if(step>=3){
+    angleArc(svg, P, Ap, Bp, 26, 'var(--yellow)', '');
+    angleArc(svg, P, ApPrime, BpPrime, 26, 'var(--yellow)', '');
+  }
+  if(step>=4){
+    const d1 = `M ${Ap[0]} ${Ap[1]} L ${Bp[0]} ${Bp[1]} L ${P[0]} ${P[1]} Z`;
+    const d2 = `M ${ApPrime[0]} ${ApPrime[1]} L ${BpPrime[0]} ${BpPrime[1]} L ${P[0]} ${P[1]} Z`;
+    svg.appendChild(el('path',{d:d1, fill:'var(--yellow)', opacity:0.15}));
+    svg.appendChild(el('path',{d:d2, fill:'var(--orange)', opacity:0.15}));
+  }
+  if(step>=5){
+    svg.appendChild(lineSeg(ApPrime[0],ApPrime[1],BpPrime[0],BpPrime[1],{stroke:'var(--orange)','stroke-width':3}));
+    const midAB=[(Ap[0]+Bp[0])/2,(Ap[1]+Bp[1])/2];
+    const midApBp=[(ApPrime[0]+BpPrime[0])/2,(ApPrime[1]+BpPrime[1])/2];
+    vlabel(svg,midAB,-10,-14,'AB','var(--yellow)',15);
+    vlabel(svg,midApBp,-14,20,"A'B'",'var(--orange)',15);
+  }
+}
+distStep.addEventListener('input', renderDist2);
+
+
+// ---------- slide navigation ----------
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+let idx = 0;
+slides.forEach((_,i)=>{ const d = document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d); });
+function show(i){
+  idx = Math.max(0, Math.min(slides.length-1, i));
+  slides.forEach((s,j)=>s.classList.toggle('active', j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
+  document.getElementById('cnt').textContent = idx+1;
+  if(idx===0) renderIntro();
+  if(idx===1) renderM1();
+  if(idx===2) renderM2();
+  if(idx===3) renderM3();
+  if(idx===4) renderDist1();
+  if(idx===5) renderDist2();
+}
+document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
+window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+
+renderIntro();
+show(0);
+</script>
+</body>
+</html>
