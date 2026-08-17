@@ -82,9 +82,9 @@ ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrin
 .dots{ display:flex; gap:.5em; }
 .dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
 .dots span.active{ background: var(--yellow); }
-.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; }
-.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; }
-.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; z-index:10; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; z-index:10; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; z-index:10; }
 .backnav a{
   font-size:.72rem; padding:.32em .7em; border-radius:999px;
   border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
