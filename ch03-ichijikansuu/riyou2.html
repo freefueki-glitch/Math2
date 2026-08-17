@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>一次関数の利用(2)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.4rem, 3vw, 2.2rem); margin: 0 0 .7em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(72vw,760px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .9em; min-width: 260px; max-width: 340px; font-size: clamp(.9rem,1.2vw,1.05rem); }
+.controls label{ color: var(--chalk-dim); font-size:.88em; display:block; margin-bottom:.2em; }
+input[type=range]{ width:100%; accent-color: var(--yellow); }
+.readout{
+  font-family:'Zen Kaku Gothic New',sans-serif; font-weight:900; font-size: clamp(.95rem,1.6vw,1.2rem);
+  padding: .6em .8em; border: 1.5px dashed var(--rule); border-radius: 14px; text-align:center; line-height:1.8;
+}
+.caption{ max-width: 700px; text-align:center; color: var(--chalk-dim); font-size: clamp(.88rem,1.3vw,1.02rem); line-height:1.75; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 780px; text-align:left; font-size: clamp(.9rem,1.4vw,1.06rem); line-height:1.8; margin-bottom:.8em;
+}
+.datatable{ border-collapse:collapse; margin:.6em auto; }
+.datatable th, .datatable td{ border:1px solid var(--rule); padding:.55em 1.1em; text-align:center; font-size: clamp(.95rem,1.6vw,1.15rem); }
+.datatable th{ background: rgba(242,240,230,0.06); color:var(--chalk-dim); font-weight:700; }
+.datatable td.hi, .datatable th.hi{ background: rgba(244,211,94,0.22); color:var(--yellow); font-weight:900; }
+.stepline{
+  display:flex; align-items:center; justify-content:center; gap:.6em;
+  font-size: clamp(.95rem,1.7vw,1.15rem); padding:.5em .2em; border-bottom:1px solid var(--rule);
+}
+.stepline:last-child{ border-bottom:none; }
+.stepline .arrow{ color:var(--chalk-dim); font-size:.7em; }
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.6em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(.98rem,1.7vw,1.2rem); line-height:1.6; padding: .4em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 一次関数</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 7</div>
+
+  <!-- 1: 重さを変えてばねの伸びを見る -->
+  <section class="slide active">
+    <h2 class="disp">① 重さを変えてばねの伸びを見てみよう</h2>
+    <div class="definition-box">
+      ばねにおもりをつるして、<b>おもりの重さ</b>と<b>ばねの伸び</b>を測定する実験をした（1年生の理科で行った実験）。<br>
+      おもりの重さを変えると、ばねの伸びがどう変わるか、実際に動かして確かめよう。
+    </div>
+    <div class="diagram-row">
+      <svg id="svgSpring" viewBox="0 0 400 460" style="width:min(40vw,300px); height:auto;"></svg>
+      <div class="controls">
+        <div><label for="springW">おもりの重さ x（g）</label><input type="range" id="springW" min="0" max="80" step="1" value="0"></div>
+        <div class="readout" id="springReadout"></div>
+      </div>
+    </div>
+    <div class="caption">おもりを重くするほど、ばねがよく伸びる。この関係を、これからグラフと式で調べていく。</div>
+  </section>
+
+  <!-- 2: 実験結果の表 -->
+  <section class="slide">
+    <h2 class="disp">② 実験結果の表</h2>
+    <div class="definition-box">実際に測定した結果は、下の表のようになった。</div>
+    <div class="diagram-row" style="align-items:center;">
+      <svg viewBox="0 0 220 300" style="width:150px; height:auto; flex-shrink:0;">
+        <rect x="60" y="14" width="100" height="14" rx="3" fill="var(--chalk-dim)"/>
+        <line x1="75" y1="28" x2="75" y2="14" stroke="var(--chalk-dim)" stroke-width="4"/>
+        <line x1="145" y1="28" x2="145" y2="14" stroke="var(--chalk-dim)" stroke-width="4"/>
+        <polyline points="110,28 138,42 82,56 138,70 82,84 138,98 82,112 138,126 82,140 110,154"
+                  fill="none" stroke="var(--cyan)" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+        <rect x="80" y="154" width="60" height="46" rx="4" fill="var(--orange)"/>
+        <text x="110" y="182" fill="var(--board)" font-size="16" font-weight="900" text-anchor="middle">おもり</text>
+        <line x1="170" y1="28" x2="170" y2="154" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="3 4"/>
+        <text x="178" y="94" fill="var(--chalk-dim)" font-size="13">伸び</text>
+      </svg>
+      <table class="datatable">
+        <tr><th>おもりの重さ x(g)</th><td>10</td><td>20</td><td>30</td><td>40</td><td>50</td></tr>
+        <tr><th>ばねの伸び y(cm)</th><td>3.2</td><td>4.9</td><td>7.4</td><td>8.8</td><td>11.2</td></tr>
+      </table>
+    </div>
+    <div class="caption">この表を、グラフに表してみよう。</div>
+  </section>
+
+  <!-- 3: 表をグラフに表す -->
+  <section class="slide">
+    <h2 class="disp">③ 表をグラフに表す</h2>
+    <div class="definition-box">表の1つの列（重さ, 伸び）の組が、グラフ上の1つの点 (x, y) になる。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgData" viewBox="0 0 900 620"></svg>
+      <div class="controls">
+        <div><label for="rowSlider">表の何番目を見る？</label><input type="range" id="rowSlider" min="1" max="5" step="1" value="1"></div>
+        <table class="datatable" id="miniTable" style="font-size:.9rem;"></table>
+        <div class="readout" id="rowReadout"></div>
+      </div>
+    </div>
+    <div class="caption">測定には誤差があるので、点はきれいな一直線には並ばない。でも、全体としては右上がりの直線に近い形をしている。</div>
+  </section>
+
+  <!-- 4: 代表的な2点を選ぶ -->
+  <section class="slide">
+    <h2 class="disp">④ 代表的な2点を選んで直線を引く</h2>
+    <div class="definition-box">すべての点を通る直線は引けない。そこで、全体の傾向をよく表している<b>2点</b>を選んで直線を引く。</div>
+    <svg class="diagram" id="svgLine" viewBox="0 0 900 620"></svg>
+    <div class="caption">(10, 3.2) と (50, 11.2) を選んで直線を引いた。他の点も、この直線の近くに集まっている。</div>
+  </section>
+
+  <!-- 3: 式を求める -->
+  <section class="slide">
+    <h2 class="disp">⑤ 直線の式を求める</h2>
+    <div class="diagram-row">
+      <div class="controls" style="max-width:460px; border:1px solid var(--rule); border-radius:12px; padding:1.1em 1.4em;">
+        <div class="stepline">2点 (10, 3.2)、(50, 11.2) を通る</div>
+        <div class="stepline">a＝(11.2－3.2)÷(50－10)＝0.2</div>
+        <div class="stepline">3.2＝0.2×10＋b → b＝1.2</div>
+        <div class="stepline" style="color:var(--yellow); font-weight:900;">y＝0.2x＋1.2</div>
+      </div>
+    </div>
+    <div class="caption">やり方は7・8時間目でやった「2点の座標から式を求める」方法と同じ。</div>
+  </section>
+
+  <!-- 4: 予測してみよう -->
+  <section class="slide">
+    <h2 class="disp">⑥ 直線の式で予測してみよう</h2>
+    <div class="definition-box">求めた式 <b>y＝0.2x＋1.2</b> を使うと、実験していない重さのときの伸びも予想できる。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgPredict" viewBox="0 0 900 620"></svg>
+      <div class="controls">
+        <div><label for="wSlider">おもりの重さ x（g）</label><input type="range" id="wSlider" min="0" max="80" step="1" value="25"></div>
+        <div class="readout" id="predictReadout"></div>
+      </div>
+    </div>
+    <div class="caption">測定した範囲（10〜50g）の中で予測することを<b>内挿</b>、範囲の外で予測することを<b>外挿</b>という。外挿は、実際とずれることがあるので注意。</div>
+  </section>
+
+  <!-- 5: まとめ -->
+  <section class="slide">
+    <h2 class="disp">⑦ まとめ</h2>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span><span>実験結果には誤差があるので、グラフの点はきれいな一直線には並ばないことが多い。</span></li>
+      <li><span class="mark yellow">◆</span><span>全体の傾向をよく表す<b>代表的な2点</b>を選んで、近似の直線を引く。</span></li>
+      <li><span class="mark orange">◆</span><span>その直線の式を求めれば、測定していない値も<b>予測</b>できる。</span></li>
+      <li><span class="mark pink">◆</span><span>測定した範囲内の予測を<b>内挿</b>、範囲外の予測を<b>外挿</b>という。外挿は誤差が大きくなりやすい。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+
+<script>
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(svgns, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function lineSeg(x1,y1,x2,y2, extra){ return el('line', Object.assign({x1,y1,x2,y2, stroke:'var(--chalk)', 'stroke-width':2, 'stroke-linecap':'round'}, extra||{})); }
+
+// ---------- SLIDE 2: 重さを変えてばねの伸びを見る (interactive) ----------
+const springW = document.getElementById('springW');
+const springReadout = document.getElementById('springReadout');
+function extensionOf(x){ return 0.2*x + 1.2; }
+function renderSpring(){
+  const svg = document.getElementById('svgSpring');
+  svg.innerHTML = '';
+  const x = +springW.value;
+  const ext = extensionOf(x);
+  const pxPerCm = 8;
+  const naturalLen = 90;
+  const totalLen = naturalLen + ext*pxPerCm;
+  const centerX = 200, topY = 50, segments = 8, amp = 26;
+
+  svg.appendChild(el('rect',{x:centerX-60,y:topY-24,width:120,height:14,rx:3,fill:'var(--chalk-dim)'}));
+  svg.appendChild(lineSeg(centerX-45,topY-10,centerX-45,topY,{stroke:'var(--chalk-dim)','stroke-width':4}));
+  svg.appendChild(lineSeg(centerX+45,topY-10,centerX+45,topY,{stroke:'var(--chalk-dim)','stroke-width':4}));
+
+  const pts=[[centerX,topY]];
+  const step = totalLen/segments;
+  for(let i=1;i<segments;i++){
+    pts.push([centerX + (i%2===0? amp : -amp), topY+step*i]);
+  }
+  pts.push([centerX, topY+totalLen]);
+  const d = pts.map((p,i)=> (i===0?'M':'L')+' '+p[0]+' '+p[1]).join(' ');
+  svg.appendChild(el('path',{d, fill:'none', stroke:'var(--cyan)', 'stroke-width':4, 'stroke-linejoin':'round', 'stroke-linecap':'round'}));
+
+  svg.appendChild(lineSeg(centerX-70,topY+naturalLen,centerX+70,topY+naturalLen,{stroke:'var(--rule)','stroke-width':1.5,'stroke-dasharray':'3 5'}));
+  const refLbl = el('text',{x:centerX+75,y:topY+naturalLen+5,fill:'var(--chalk-dim)','font-size':13}); refLbl.textContent='自然の長さ';
+  svg.appendChild(refLbl);
+
+  const boxTop = topY+totalLen;
+  svg.appendChild(el('rect',{x:centerX-35,y:boxTop,width:70,height:46,rx:4,fill:'var(--orange)'}));
+  const wLbl = el('text',{x:centerX,y:boxTop+28,fill:'var(--board)','font-size':15,'font-weight':900,'text-anchor':'middle'});
+  wLbl.textContent = x+'g';
+  svg.appendChild(wLbl);
+
+  if(ext>0.05){
+    const y1 = topY+naturalLen, y2 = boxTop;
+    svg.appendChild(lineSeg(centerX+90,y1,centerX+90,y2,{stroke:'var(--yellow)','stroke-width':2}));
+    svg.appendChild(lineSeg(centerX+84,y1,centerX+96,y1,{stroke:'var(--yellow)','stroke-width':2}));
+    svg.appendChild(lineSeg(centerX+84,y2,centerX+96,y2,{stroke:'var(--yellow)','stroke-width':2}));
+    const extLbl = el('text',{x:centerX+100,y:(y1+y2)/2+5,fill:'var(--yellow)','font-size':14,'font-weight':900}); extLbl.textContent=ext.toFixed(1)+'cm';
+    svg.appendChild(extLbl);
+  }
+
+  springReadout.innerHTML = `おもり：${x}g<br><span style="color:var(--yellow);">ばねの伸び：${ext.toFixed(1)}cm</span>`;
+}
+springW.addEventListener('input', renderSpring);
+
+// plot area: x = weight (g, 0-80), y = extension (cm, 0-15), first quadrant only
+const plotX0=110, plotX1=830, plotY0=520, plotY1=60;
+const scaleX = (plotX1-plotX0)/80, scaleY = (plotY0-plotY1)/15;
+function sxW(x){ return plotX0 + x*scaleX; }
+function syE(y){ return plotY0 - y*scaleY; }
+
+function drawAxes(svg){
+  for(let y=0; y<=15; y+=1){
+    svg.appendChild(lineSeg(plotX0,syE(y),plotX1,syE(y),{stroke:'var(--rule)','stroke-width':1}));
+  }
+  for(let x=0; x<=80; x+=10){
+    svg.appendChild(lineSeg(sxW(x),plotY0,sxW(x),plotY1,{stroke:'var(--rule)','stroke-width':1}));
+  }
+  svg.appendChild(lineSeg(plotX0,plotY0,plotX1+10,plotY0,{'stroke-width':2.5}));
+  svg.appendChild(lineSeg(plotX0,plotY0,plotX0,plotY1-10,{'stroke-width':2.5}));
+  svg.appendChild(el('path',{d:`M ${plotX1+10} ${plotY0} l -14 -8 v16 z`, fill:'var(--chalk)'}));
+  svg.appendChild(el('path',{d:`M ${plotX0} ${plotY1-10} l -8 14 h16 z`, fill:'var(--chalk)'}));
+  for(let x=0; x<=80; x+=10){
+    const tx = el('text',{x:sxW(x),y:plotY0+24,fill:'var(--chalk-dim)','font-size':15,'text-anchor':'middle'});
+    tx.textContent = x;
+    svg.appendChild(tx);
+  }
+  for(let y=0; y<=15; y+=5){
+    const ty = el('text',{x:plotX0-12,y:syE(y)+5,fill:'var(--chalk-dim)','font-size':15,'text-anchor':'end'});
+    ty.textContent = y;
+    svg.appendChild(ty);
+  }
+  const xlab = el('text',{x:plotX1-10,y:plotY0+46,fill:'var(--chalk-dim)','font-size':16,'text-anchor':'end'}); xlab.textContent='おもりの重さ(g)';
+  const ylab = el('text',{x:plotX0-12,y:plotY1-24,fill:'var(--chalk-dim)','font-size':16,'text-anchor':'end'}); ylab.textContent='ばねの伸び(cm)';
+  svg.appendChild(xlab); svg.appendChild(ylab);
+}
+const dataPts = [[10,3.2],[20,4.9],[30,7.4],[40,8.8],[50,11.2]];
+function plotDots(svg, color, highlightIdx){
+  dataPts.forEach((p,i)=>{
+    const isHi = highlightIdx && highlightIdx.includes(i);
+    svg.appendChild(el('circle',{cx:sxW(p[0]),cy:syE(p[1]),r: isHi?9:6, fill: isHi?'var(--yellow)':color}));
+  });
+}
+
+// ---------- SLIDE 2: 表をグラフに表す (interactive) ----------
+const rowSlider = document.getElementById('rowSlider');
+const miniTable = document.getElementById('miniTable');
+const rowReadout = document.getElementById('rowReadout');
+function renderData(){
+  const svg = document.getElementById('svgData');
+  svg.innerHTML = '';
+  drawAxes(svg);
+  const n = +rowSlider.value;
+  plotDots(svg, 'var(--cyan)', [n-1]);
+  const [x,y] = dataPts[n-1];
+  svg.appendChild(lineSeg(sxW(x),plotY0,sxW(x),syE(y),{stroke:'var(--yellow)','stroke-width':1.5,'stroke-dasharray':'3 5'}));
+  svg.appendChild(lineSeg(plotX0,syE(y),sxW(x),syE(y),{stroke:'var(--yellow)','stroke-width':1.5,'stroke-dasharray':'3 5'}));
+
+  let rowW = '<tr><th>重さ x(g)</th>', rowE = '<tr><th>伸び y(cm)</th>';
+  dataPts.forEach((p,i)=>{
+    const hi = (i===n-1) ? ' class="hi"' : '';
+    rowW += `<td${hi}>${p[0]}</td>`;
+    rowE += `<td${hi}>${p[1]}</td>`;
+  });
+  rowW += '</tr>'; rowE += '</tr>';
+  miniTable.innerHTML = rowW + rowE;
+
+  rowReadout.innerHTML = `表の${n}番目 → 点 (${x}, ${y})`;
+}
+rowSlider.addEventListener('input', renderData);
+
+// ---------- SLIDE 3: 代表的な2点を選ぶ (static) ----------
+function renderLine(){
+  const svg = document.getElementById('svgLine');
+  svg.innerHTML = '';
+  drawAxes(svg);
+  const a=0.2, b=1.2;
+  svg.appendChild(lineSeg(sxW(0),syE(b),sxW(65),syE(a*65+b),{stroke:'var(--yellow)','stroke-width':3}));
+  plotDots(svg, 'var(--cyan)', [0,4]);
+  const l1 = el('text',{x:sxW(10)-14,y:syE(3.2)+26,fill:'var(--yellow)','font-size':15,'font-weight':900,'text-anchor':'middle'}); l1.textContent='(10, 3.2)';
+  svg.appendChild(l1);
+  const l2 = el('text',{x:sxW(50)+8,y:syE(11.2)-14,fill:'var(--yellow)','font-size':15,'font-weight':900}); l2.textContent='(50, 11.2)';
+  svg.appendChild(l2);
+}
+
+// ---------- SLIDE 4: 予測してみよう (interactive) ----------
+const wSlider = document.getElementById('wSlider');
+const predictReadout = document.getElementById('predictReadout');
+function renderPredict(){
+  const svg = document.getElementById('svgPredict');
+  svg.innerHTML = '';
+  drawAxes(svg);
+  const a=0.2, b=1.2;
+  svg.appendChild(lineSeg(sxW(0),syE(b),sxW(80),syE(a*80+b),{stroke:'var(--chalk-dim)','stroke-width':2.5}));
+  plotDots(svg, 'var(--cyan)');
+  const x = +wSlider.value;
+  const y = a*x+b;
+  const isInterp = x>=10 && x<=50;
+  const color = isInterp ? 'var(--cyan)' : 'var(--orange)';
+  svg.appendChild(lineSeg(sxW(x),plotY0,sxW(x),syE(y),{stroke:color,'stroke-width':1.5,'stroke-dasharray':'3 5'}));
+  svg.appendChild(lineSeg(plotX0,syE(y),sxW(x),syE(y),{stroke:color,'stroke-width':1.5,'stroke-dasharray':'3 5'}));
+  svg.appendChild(el('circle',{cx:sxW(x),cy:syE(y),r:8,fill:color}));
+  predictReadout.innerHTML = `x＝${x}g のとき<br>` +
+    `<span style="color:${color};">y＝0.2×${x}＋1.2＝${y.toFixed(1)}cm</span><br>` +
+    (isInterp ? `<span style="color:var(--cyan);">内挿（測定範囲内）</span>` : `<span style="color:var(--orange);">外挿（測定範囲外）</span>`);
+}
+wSlider.addEventListener('input', renderPredict);
+
+// ---------- slide navigation ----------
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+let idx = 0;
+slides.forEach((_,i)=>{ const d = document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d); });
+function show(i){
+  idx = Math.max(0, Math.min(slides.length-1, i));
+  slides.forEach((s,j)=>s.classList.toggle('active', j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
+  document.getElementById('cnt').textContent = idx+1;
+  if(idx===0) renderSpring();
+  if(idx===2) renderData();
+  if(idx===3) renderLine();
+  if(idx===5) renderPredict();
+}
+document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
+window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+
+show(0);
+</script>
+</body>
+</html>

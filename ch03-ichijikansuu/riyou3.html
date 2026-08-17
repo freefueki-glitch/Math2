@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>一次関数の利用(3)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.4rem, 3vw, 2.2rem); margin: 0 0 .7em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(60vw,640px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .9em; min-width: 260px; max-width: 360px; font-size: clamp(.9rem,1.2vw,1.05rem); }
+.controls label{ color: var(--chalk-dim); font-size:.88em; display:block; margin-bottom:.2em; }
+input[type=range]{ width:100%; accent-color: var(--yellow); }
+.readout{
+  font-family:'Zen Kaku Gothic New',sans-serif; font-weight:900; font-size: clamp(.95rem,1.6vw,1.2rem);
+  padding: .6em .8em; border: 1.5px dashed var(--rule); border-radius: 14px; text-align:center; line-height:1.8;
+}
+.caption{ max-width: 700px; text-align:center; color: var(--chalk-dim); font-size: clamp(.88rem,1.3vw,1.02rem); line-height:1.75; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 780px; text-align:left; font-size: clamp(.9rem,1.4vw,1.06rem); line-height:1.8; margin-bottom:.8em;
+}
+.stepline{
+  display:flex; align-items:center; justify-content:center; gap:.6em;
+  font-size: clamp(.95rem,1.7vw,1.15rem); padding:.5em .2em; border-bottom:1px solid var(--rule);
+}
+.stepline:last-child{ border-bottom:none; }
+.stepline .arrow{ color:var(--chalk-dim); font-size:.7em; }
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.6em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(.98rem,1.7vw,1.2rem); line-height:1.6; padding: .4em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 一次関数</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 7</div>
+
+  <!-- 1: 問題 -->
+  <section class="slide active">
+    <h2 class="disp">① 図形と点Pの動き</h2>
+    <div class="definition-box">
+      長方形ABCDで、たて（BC）＝6cm、よこ（AB）＝12cmとする。<br>
+      点Pは、頂点Bを出発し、毎秒1cmの速さで、辺BC、辺CD、辺DAの順に、Aまで動く。<br>
+      x秒後の△ABPの面積をy cm²として、xとyの関係を調べよう。
+    </div>
+    <svg class="diagram" id="svgSetup" viewBox="0 0 380 260"></svg>
+    <div class="caption">点Pの位置によって、△ABPの形が変わっていく。</div>
+  </section>
+
+  <!-- 2: 点Pを動かして面積を見る -->
+  <section class="slide">
+    <h2 class="disp">② 点Pを動かして面積を見てみよう</h2>
+    <div class="definition-box">xを動かして、△ABPの形と面積がどう変わるか確かめよう。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgMove" viewBox="0 0 380 260" style="width:min(46vw,420px);"></svg>
+      <div class="controls">
+        <div><label for="pSlider">時間 x（秒）</label><input type="range" id="pSlider" min="0" max="24" step="1" value="0"></div>
+        <div class="readout" id="pReadout"></div>
+      </div>
+    </div>
+    <div class="caption">PがBCの上にあるときと、CDの上にあるときで、面積の増え方が変わることに注目しよう。</div>
+  </section>
+
+  <!-- 3: 式を求める(BC上) -->
+  <section class="slide">
+    <h2 class="disp">③ Pが辺BC上にあるとき</h2>
+    <div class="diagram-row">
+      <div class="controls" style="max-width:460px; border:1px solid var(--rule); border-radius:12px; padding:1.1em 1.4em;">
+        <div class="stepline">0≦x≦6 のとき</div>
+        <div class="stepline">BP＝x（cm）</div>
+        <div class="stepline">△ABPの底辺はAB＝12、高さはBP＝x</div>
+        <div class="stepline">y＝<span>&#189;</span>×12×x</div>
+        <div class="stepline" style="color:var(--yellow); font-weight:900;">y＝6x　（0≦x≦6）</div>
+      </div>
+    </div>
+    <div class="caption">xが増えるにつれて、高さBPが伸びるので、面積も一定の割合で増えていく。</div>
+  </section>
+
+  <!-- 4: 式を求める(CD上) -->
+  <section class="slide">
+    <h2 class="disp">④ Pが辺CD上にあるとき</h2>
+    <div class="diagram-row">
+      <div class="controls" style="max-width:460px; border:1px solid var(--rule); border-radius:12px; padding:1.1em 1.4em;">
+        <div class="stepline">6≦x≦18 のとき</div>
+        <div class="stepline">Pは辺CD上を動くが、ABからの高さはBC＝6のまま変わらない</div>
+        <div class="stepline">y＝<span>&#189;</span>×12×6</div>
+        <div class="stepline" style="color:var(--yellow); font-weight:900;">y＝36　（6≦x≦18）</div>
+      </div>
+    </div>
+    <div class="caption">CDはABと平行なので、Pがどこにあっても高さは変わらない。だから面積は一定になる。</div>
+  </section>
+
+  <!-- 5: 式を求める(DA上) -->
+  <section class="slide">
+    <h2 class="disp">⑤ Pが辺DA上にあるとき</h2>
+    <div class="diagram-row">
+      <div class="controls" style="max-width:460px; border:1px solid var(--rule); border-radius:12px; padding:1.1em 1.4em;">
+        <div class="stepline">18≦x≦24 のとき</div>
+        <div class="stepline">Pは点Dを出発してから、(x－18)秒たっている</div>
+        <div class="stepline">速さは秒速1cmなので、DP＝x－18（cm）</div>
+        <div class="stepline">DA＝6cmなので、AP＝DA－DP＝6－(x－18)（cm）</div>
+        <div class="stepline">△ABPの底辺はAB＝12、高さはAP＝6－(x－18)</div>
+        <div class="stepline">y＝<span>&#189;</span>×12×{6－(x－18)}</div>
+        <div class="stepline" style="color:var(--yellow); font-weight:900;">y＝144－6x　（18≦x≦24）</div>
+      </div>
+    </div>
+    <div class="caption">辺DAは辺ABに垂直なので、Pから辺ABへの高さは、そのままAPの長さになる。Pが頂点Aに近づくほどAPが小さくなるので、面積も減っていく。x＝24でPはAに着き、面積は0になる。</div>
+  </section>
+
+  <!-- 6: グラフに表す -->
+  <section class="slide">
+    <h2 class="disp">⑥ グラフに表す</h2>
+    <svg class="diagram" id="svgGraph" viewBox="0 0 900 620"></svg>
+    <div class="caption">
+      <span style="color:var(--cyan);">0≦x≦6：y＝6x</span>（右上がり）　
+      <span style="color:var(--orange);">6≦x≦18：y＝36</span>（一定）　
+      <span style="color:var(--pink);">18≦x≦24：y＝144－6x</span>（右下がり）
+    </div>
+  </section>
+
+  <!-- 7: まとめ -->
+  <section class="slide">
+    <h2 class="disp">⑦ まとめ</h2>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span><span>点Pが動く図形の問題では、Pが<b>どの辺の上にあるか</b>によって、面積の式が変わる。</span></li>
+      <li><span class="mark yellow">◆</span><span>底辺が変わらないとき、面積は<b>高さに比例</b>して変化する（高さが増えれば面積も増え、減れば面積も減る）。</span></li>
+      <li><span class="mark orange">◆</span><span>高さが変わらなくなると、面積は<b>一定</b>になる。</span></li>
+      <li><span class="mark pink">◆</span><span>グラフに表すときは、<b>xの変域ごとに</b>式を分けて考える。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+
+<script>
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(svgns, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function lineSeg(x1,y1,x2,y2, extra){ return el('line', Object.assign({x1,y1,x2,y2, stroke:'var(--chalk)', 'stroke-width':2, 'stroke-linecap':'round'}, extra||{})); }
+
+// rectangle geometry (screen coords, y downward): A top-left, B top-right, C bottom-right, D bottom-left
+// AB(よこ)=12cm, BC(たて)=6cm, scale 20px/cm, speed=1cm/秒
+const A=[60,60], B=[300,60], C=[300,180], D=[60,180];
+function heightOf(x){
+  if(x<=6) return x;
+  if(x<=18) return 6;
+  return 6 - (x-18);
+}
+function areaOf(x){ return 0.5*12*heightOf(x); }
+function posOfP(x){
+  if(x<=6){ return [300, 60 + x*20]; } // on BC, moving down
+  if(x<=18){ return [300 - (x-6)*20, 180]; } // on CD, moving left
+  return [60, 180 - (x-18)*20]; // on DA, moving up
+}
+function drawFigure(svg, x, showTriangle){
+  svg.innerHTML = '';
+  // rectangle outline
+  const rectPts = [A,B,C,D];
+  const rd = rectPts.map((p,i)=>(i===0?'M':'L')+' '+p[0]+' '+p[1]).join(' ')+' Z';
+  svg.appendChild(el('path',{d:rd, fill:'rgba(242,240,230,0.04)', stroke:'var(--chalk)', 'stroke-width':2.5, 'stroke-linejoin':'round'}));
+  // vertex labels
+  const labels = [['A',A,-14,-8],['B',B,10,-8],['C',C,10,18],['D',D,-14,18]];
+  labels.forEach(([name,p,dx,dy])=>{
+    const t = el('text',{x:p[0]+dx,y:p[1]+dy,fill:'var(--chalk-dim)','font-size':16,'font-weight':700});
+    t.textContent = name;
+    svg.appendChild(t);
+  });
+  if(showTriangle){
+    const P = posOfP(x);
+    const td = `M ${A[0]} ${A[1]} L ${B[0]} ${B[1]} L ${P[0]} ${P[1]} Z`;
+    svg.appendChild(el('path',{d:td, fill:'var(--yellow)', opacity:0.35, stroke:'var(--yellow)', 'stroke-width':2}));
+    svg.appendChild(el('circle',{cx:P[0],cy:P[1],r:6,fill:'var(--pink)'}));
+    const labelDx = x<=6 ? 12 : (x<=18 ? -12 : 12);
+    const labelDy = x<=6 ? 4 : (x<=18 ? -8 : 4);
+    const labelAnchor = x<=6 ? 'start' : (x<=18 ? 'end' : 'start');
+    const pl = el('text',{x:P[0]+labelDx, y:P[1]+labelDy, fill:'var(--pink)','font-size':15,'font-weight':900,'text-anchor':labelAnchor});
+    pl.textContent = 'P';
+    svg.appendChild(pl);
+  }
+}
+
+// ---------- SLIDE 1: 問題 (static) ----------
+function renderSetup(){
+  const svg = document.getElementById('svgSetup');
+  drawFigure(svg, 1.5, true);
+  const abLbl = el('text',{x:(A[0]+B[0])/2,y:A[1]-14,fill:'var(--chalk-dim)','font-size':14,'text-anchor':'middle'}); abLbl.textContent='12cm';
+  svg.appendChild(abLbl);
+  const bcLbl = el('text',{x:B[0]+16,y:(B[1]+C[1])/2,fill:'var(--chalk-dim)','font-size':14}); bcLbl.textContent='6cm';
+  svg.appendChild(bcLbl);
+}
+
+// ---------- SLIDE 2: 点Pを動かして面積を見る (interactive) ----------
+const pSlider = document.getElementById('pSlider');
+const pReadout = document.getElementById('pReadout');
+function renderMove(){
+  const svg = document.getElementById('svgMove');
+  const x = +pSlider.value;
+  drawFigure(svg, x, true);
+  const area = areaOf(x);
+  const h = heightOf(x);
+  const P = posOfP(x);
+  let phase, heightLabel;
+
+  // AB length, always shown on the figure
+  const abLbl = el('text',{x:(A[0]+B[0])/2,y:A[1]-12,fill:'var(--cyan)','font-size':14,'font-weight':900,'text-anchor':'middle'});
+  abLbl.textContent = 'AB＝12cm';
+  svg.appendChild(abLbl);
+
+  if(x<=6){
+    phase = 'Pは辺BC上（0≦x≦6）';
+    heightLabel = `BP＝${h}cm`;
+    if(h>0.3){
+      const lbl = el('text',{x:B[0]+14,y:(B[1]+P[1])/2+5,fill:'var(--pink)','font-size':14,'font-weight':900});
+      lbl.textContent = `BP＝${h}cm`;
+      svg.appendChild(lbl);
+    }
+  } else if(x<=18){
+    phase = 'Pは辺CD上（6≦x≦18）';
+    heightLabel = `Pから辺ABへの垂線＝6cm`;
+    // draw the perpendicular from P down to AB, to show where the height comes from
+    svg.appendChild(lineSeg(P[0],P[1],P[0],A[1],{stroke:'var(--pink)','stroke-width':2,'stroke-dasharray':'4 5'}));
+    svg.appendChild(el('circle',{cx:P[0],cy:A[1],r:4,fill:'var(--pink)'}));
+    const lbl = el('text',{x:P[0]+10,y:(A[1]+P[1])/2+5,fill:'var(--pink)','font-size':14,'font-weight':900});
+    lbl.textContent = '6cm';
+    svg.appendChild(lbl);
+  } else {
+    phase = 'Pは辺DA上（18≦x≦24）';
+    heightLabel = `AP＝${h}cm`;
+    if(h>0.3){
+      const lbl = el('text',{x:A[0]-14,y:(A[1]+P[1])/2+5,fill:'var(--pink)','font-size':14,'font-weight':900,'text-anchor':'end'});
+      lbl.textContent = `AP＝${h}cm`;
+      svg.appendChild(lbl);
+    }
+  }
+  pReadout.innerHTML = `x＝${x}秒<br><span style="color:var(--chalk-dim); font-size:.8em;">${phase}</span><br>` +
+    `<span style="color:var(--cyan);">AB＝12cm</span><br>` +
+    `<span style="color:var(--pink);">${heightLabel}</span><br>` +
+    `<span style="color:var(--yellow);">面積 y＝${area}cm²</span>`;
+}
+pSlider.addEventListener('input', renderMove);
+
+// ---------- SLIDE 5: グラフに表す (static piecewise graph) ----------
+function renderGraphSlide(){
+  const svg = document.getElementById('svgGraph');
+  svg.innerHTML = '';
+  const gx0=110, gx1=780, gy0=520, gy1=80;
+  const sX = (gx1-gx0)/24, sY=(gy0-gy1)/40;
+  function sx(x){ return gx0+x*sX; }
+  function sy(y){ return gy0-y*sY; }
+  for(let x=0;x<=24;x+=2){ svg.appendChild(lineSeg(sx(x),gy0,sx(x),gy1,{stroke:'var(--rule)','stroke-width':1})); }
+  for(let y=0;y<=40;y+=10){ svg.appendChild(lineSeg(gx0,sy(y),gx1,sy(y),{stroke:'var(--rule)','stroke-width':1})); }
+  svg.appendChild(lineSeg(gx0,gy0,gx1+10,gy0,{'stroke-width':2.5}));
+  svg.appendChild(lineSeg(gx0,gy0,gx0,gy1-10,{'stroke-width':2.5}));
+  svg.appendChild(el('path',{d:`M ${gx1+10} ${gy0} l -14 -8 v16 z`, fill:'var(--chalk)'}));
+  svg.appendChild(el('path',{d:`M ${gx0} ${gy1-10} l -8 14 h16 z`, fill:'var(--chalk)'}));
+  for(let x=0;x<=24;x+=2){
+    const t=el('text',{x:sx(x),y:gy0+22,fill:'var(--chalk-dim)','font-size':13,'text-anchor':'middle'}); t.textContent=x;
+    svg.appendChild(t);
+  }
+  for(let y=0;y<=40;y+=10){
+    const t=el('text',{x:gx0-10,y:sy(y)+5,fill:'var(--chalk-dim)','font-size':14,'text-anchor':'end'}); t.textContent=y;
+    svg.appendChild(t);
+  }
+  const xlab=el('text',{x:gx1-6,y:gy0+42,fill:'var(--chalk-dim)','font-size':15,'text-anchor':'end'}); xlab.textContent='x(秒)';
+  const ylab=el('text',{x:gx0-10,y:gy1-20,fill:'var(--chalk-dim)','font-size':15,'text-anchor':'end'}); ylab.textContent='y(cm²)';
+  svg.appendChild(xlab); svg.appendChild(ylab);
+  svg.appendChild(lineSeg(sx(0),sy(0),sx(6),sy(36),{stroke:'var(--cyan)','stroke-width':3.5}));
+  svg.appendChild(lineSeg(sx(6),sy(36),sx(18),sy(36),{stroke:'var(--orange)','stroke-width':3.5}));
+  svg.appendChild(lineSeg(sx(18),sy(36),sx(24),sy(0),{stroke:'var(--pink)','stroke-width':3.5}));
+  svg.appendChild(el('circle',{cx:sx(6),cy:sy(36),r:6,fill:'var(--yellow)'}));
+  svg.appendChild(el('circle',{cx:sx(18),cy:sy(36),r:6,fill:'var(--yellow)'}));
+  svg.appendChild(el('circle',{cx:sx(24),cy:sy(0),r:6,fill:'var(--pink)'}));
+}
+
+// ---------- slide navigation ----------
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+let idx = 0;
+slides.forEach((_,i)=>{ const d = document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d); });
+function show(i){
+  idx = Math.max(0, Math.min(slides.length-1, i));
+  slides.forEach((s,j)=>s.classList.toggle('active', j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
+  document.getElementById('cnt').textContent = idx+1;
+  if(idx===0) renderSetup();
+  if(idx===1) renderMove();
+  if(idx===5) renderGraphSlide();
+}
+document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
+window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+
+renderSetup();
+show(0);
+</script>
+</body>
+</html>

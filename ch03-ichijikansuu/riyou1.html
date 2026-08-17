@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>一次関数の利用(1)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.4rem, 3vw, 2.2rem); margin: 0 0 .7em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(72vw,760px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .9em; min-width: 260px; max-width: 340px; font-size: clamp(.9rem,1.2vw,1.05rem); }
+.controls label{ color: var(--chalk-dim); font-size:.88em; display:block; margin-bottom:.2em; }
+input[type=range]{ width:100%; accent-color: var(--yellow); }
+.readout{
+  font-family:'Zen Kaku Gothic New',sans-serif; font-weight:900; font-size: clamp(.95rem,1.6vw,1.2rem);
+  padding: .6em .8em; border: 1.5px dashed var(--rule); border-radius: 14px; text-align:center; line-height:1.8;
+}
+.caption{ max-width: 700px; text-align:center; color: var(--chalk-dim); font-size: clamp(.88rem,1.3vw,1.02rem); line-height:1.75; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 780px; text-align:left; font-size: clamp(.9rem,1.4vw,1.06rem); line-height:1.8; margin-bottom:.8em;
+}
+.proof-step{
+  display:flex; align-items:flex-start; gap:.8em; font-size: clamp(.88rem,1.3vw,1rem);
+  line-height:1.65; padding:.55em .2em; border-bottom:1px solid var(--rule);
+}
+.stepnum{
+  flex-shrink:0; width:1.7em; height:1.7em; border-radius:50%; background: var(--yellow); color:#20301f;
+  font-weight:900; font-size:.9em; display:flex; align-items:center; justify-content:center;
+}
+.stepline{
+  display:flex; align-items:center; justify-content:center; gap:.6em;
+  font-size: clamp(.95rem,1.7vw,1.15rem); padding:.5em .2em; border-bottom:1px solid var(--rule);
+}
+.stepline:last-child{ border-bottom:none; }
+.stepline .arrow{ color:var(--chalk-dim); font-size:.7em; }
+.stepline .tag{ font-size:.6em; color:var(--chalk-dim); flex-shrink:0; width:5em; text-align:right; }
+.frac{ display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 .2em; line-height:1.1; }
+.frac .num{ padding:0 .2em; border-bottom:2px solid currentColor; }
+.frac .den{ padding:0 .2em; }
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.6em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(.98rem,1.7vw,1.2rem); line-height:1.6; padding: .4em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 一次関数</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 6</div>
+
+  <!-- 1: 問題とグラフ -->
+  <section class="slide active">
+    <h2 class="disp">① 問題とグラフ</h2>
+    <div class="definition-box">
+      Aさんは8時に家を出発し、家から1kmの公園に8時20分に着いて10分休み、8時30分に公園を出発して、家から4kmの学校に9時に着いた。<br>
+      Bさんは8時10分に学校を出発し、一定の速さで家に向かって歩き、8時50分に家に着いた。<br>
+      2人が出会うのは、何時何分、家から何kmの地点か。
+    </div>
+    <svg class="diagram" id="svgSetup" viewBox="0 0 900 620"></svg>
+    <div class="caption"><span style="color:var(--cyan);">青色</span>がAさんの道のり、<span style="color:var(--pink);">ピンク色</span>がBさんの道のり。横軸が時刻、縦軸が家からの道のり。</div>
+  </section>
+
+  <!-- 2: グラフを動かして確認 -->
+  <section class="slide">
+    <h2 class="disp">② グラフを動かして確認しよう</h2>
+    <div class="definition-box">時刻を動かして、2人の位置と、2人の間の距離がどう変わるか見てみよう。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgMove" viewBox="0 0 900 620"></svg>
+      <div class="controls">
+        <div><label for="tSlider">時刻を動かす</label><input type="range" id="tSlider" min="0" max="65" step="1" value="0"></div>
+        <div class="readout" id="moveReadout"></div>
+      </div>
+    </div>
+    <div class="caption">2人の間の距離が0になったところが、出会う瞬間。</div>
+  </section>
+
+  <!-- 3: 式を求める -->
+  <section class="slide">
+    <h2 class="disp">③ Aさん・Bさんの式を求めよう</h2>
+    <div class="definition-box">出会う場所を計算するには、まずグラフから<b>2点の座標</b>を読み取って、それぞれの式を求める。</div>
+    <div class="diagram-row">
+      <div class="controls" style="max-width:420px; border:1px solid var(--rule); border-radius:12px; padding:1.1em 1.4em;">
+        <div style="color:var(--cyan); font-weight:700; margin-bottom:.3em;">Aさん（公園→学校の区間）</div>
+        <div class="stepline">2点 (30, 1)、(60, 4) を通る</div>
+        <div class="stepline">a＝<span class="frac"><span class="num">4－1</span><span class="den">60－30</span></span>＝<span class="frac"><span class="num">3</span><span class="den">30</span></span>＝<span class="frac"><span class="num">1</span><span class="den">10</span></span></div>
+        <div class="stepline">1＝0.1×30＋b → b＝－2</div>
+        <div class="stepline" style="color:var(--cyan); font-weight:900;">y＝0.1x－2</div>
+      </div>
+      <div class="controls" style="max-width:420px; border:1px solid var(--rule); border-radius:12px; padding:1.1em 1.4em;">
+        <div style="color:var(--pink); font-weight:700; margin-bottom:.3em;">Bさん</div>
+        <div class="stepline">2点 (10, 4)、(50, 0) を通る</div>
+        <div class="stepline">a＝<span class="frac"><span class="num">0－4</span><span class="den">50－10</span></span>＝<span class="frac"><span class="num">－4</span><span class="den">40</span></span>＝<span class="frac"><span class="num">－1</span><span class="den">10</span></span></div>
+        <div class="stepline">4＝－0.1×10＋b → b＝5</div>
+        <div class="stepline" style="color:var(--pink); font-weight:900;">y＝－0.1x＋5</div>
+      </div>
+    </div>
+    <div class="caption">やり方は7・8時間目でやった「2点の座標から式を求める」方法と同じ。</div>
+  </section>
+
+  <!-- 4: 考え方 -->
+  <section class="slide">
+    <h2 class="disp">④ 出会う時刻・場所の求め方</h2>
+    <div class="diagram-row">
+      <div class="controls" style="max-width:600px;">
+        <div class="proof-step"><span class="stepnum">1</span><span>2人が出会う点は、<b>2つのグラフの交点</b>にあたる。</span></div>
+        <div class="proof-step"><span class="stepnum">2</span><span>Aさんのグラフは<b>折れ線</b>なので、Bさんのグラフと<b>同じ範囲で重なっている部分</b>を見つける。</span></div>
+        <div class="proof-step"><span class="stepnum">3</span><span>その部分の式と、Bさんの式を、<b>連立方程式</b>として解く。</span></div>
+        <div class="proof-step"><span class="stepnum">4</span><span>求めたxを時刻に、yを道のりに直して答える。</span></div>
+      </div>
+    </div>
+    <div class="caption">今回は、Aさんが公園を出て学校に向かう区間（8時30分〜9時）で、Bさんのグラフと重なっていることがグラフからわかる。</div>
+  </section>
+
+  <!-- 4: 計算で求める -->
+  <section class="slide">
+    <h2 class="disp">⑤ 計算で求めよう</h2>
+    <div class="diagram-row">
+      <div class="controls" style="max-width:460px; border:1px solid var(--rule); border-radius:12px; padding:1.1em 1.4em;">
+        <div class="stepline"><span class="tag">Aさん</span><span>y＝0.1x－2　（30≦x≦60）</span></div>
+        <div class="stepline"><span class="tag">Bさん</span><span>y＝－0.1x＋5　（10≦x≦50）</span></div>
+        <div class="stepline"><span class="arrow">↓ 2つの式を連立方程式として解く</span></div>
+        <div class="stepline">0.1x－2＝－0.1x＋5</div>
+        <div class="stepline">0.2x＝7</div>
+        <div class="stepline" style="color:var(--yellow); font-weight:900;">x＝35　（8時35分）</div>
+        <div class="stepline"><span class="arrow">↓ 代入してyを求める</span></div>
+        <div class="stepline">y＝0.1×35－2＝1.5</div>
+        <div class="stepline" style="color:var(--yellow); font-weight:900; margin-top:.3em;">答え：8時35分、家から1.5kmの地点</div>
+      </div>
+    </div>
+    <div class="caption">xの値(35)が、Aさんの式の範囲（30〜60）にもBさんの式の範囲（10〜50）にも入っていることを確認しよう。</div>
+  </section>
+
+  <!-- 5: まとめ -->
+  <section class="slide">
+    <h2 class="disp">⑥ まとめ</h2>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span><span>速さの文章問題は、<b>横軸に時間、縦軸に道のり</b>をとったグラフに表せる。</span></li>
+      <li><span class="mark yellow">◆</span><span>2人が出会う点は、<b>2つのグラフの交点</b>にあたる。</span></li>
+      <li><span class="mark orange">◆</span><span>折れ線グラフのときは、<b>どの区間で重なっているか</b>をグラフから確認してから式を立てる。</span></li>
+      <li><span class="mark pink">◆</span><span>連立方程式を解いて、xを時刻に、yを道のりに直して答える。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+
+<script>
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(svgns, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function lineSeg(x1,y1,x2,y2, extra){ return el('line', Object.assign({x1,y1,x2,y2, stroke:'var(--chalk)', 'stroke-width':2, 'stroke-linecap':'round'}, extra||{})); }
+
+const plotX0=110, plotX1=830, plotY0=520, plotY1=60;
+const scaleX = (plotX1-plotX0)/65, scaleY = (plotY0-plotY1)/5;
+function sxT(t){ return plotX0 + t*scaleX; }
+function syD(d){ return plotY0 - d*scaleY; }
+function clockLabel(t){
+  const total = 8*60 + Math.round(t);
+  const hh = Math.floor(total/60), mm = total%60;
+  return `${hh}:${mm.toString().padStart(2,'0')}`;
+}
+
+function drawAxes(svg){
+  for(let d=0; d<=5; d++){
+    svg.appendChild(lineSeg(plotX0,syD(d),plotX1,syD(d),{stroke:'var(--rule)','stroke-width':1}));
+  }
+  for(let t=0; t<=65; t+=10){
+    svg.appendChild(lineSeg(sxT(t),plotY0,sxT(t),plotY1,{stroke:'var(--rule)','stroke-width':1}));
+  }
+  svg.appendChild(lineSeg(plotX0,plotY0,plotX1+10,plotY0,{'stroke-width':2.5}));
+  svg.appendChild(lineSeg(plotX0,plotY0,plotX0,plotY1-10,{'stroke-width':2.5}));
+  svg.appendChild(el('path',{d:`M ${plotX1+10} ${plotY0} l -14 -8 v16 z`, fill:'var(--chalk)'}));
+  svg.appendChild(el('path',{d:`M ${plotX0} ${plotY1-10} l -8 14 h16 z`, fill:'var(--chalk)'}));
+  for(let t=0; t<=65; t+=10){
+    const tx = el('text',{x:sxT(t),y:plotY0+24,fill:'var(--chalk-dim)','font-size':15,'text-anchor':'middle'});
+    tx.textContent = clockLabel(t);
+    svg.appendChild(tx);
+  }
+  for(let d=0; d<=5; d++){
+    const ty = el('text',{x:plotX0-12,y:syD(d)+5,fill:'var(--chalk-dim)','font-size':15,'text-anchor':'end'});
+    ty.textContent = d;
+    svg.appendChild(ty);
+  }
+  const xlab = el('text',{x:plotX1-10,y:plotY0+46,fill:'var(--chalk-dim)','font-size':16,'text-anchor':'end'}); xlab.textContent='時刻';
+  const ylab = el('text',{x:plotX0-12,y:plotY1-24,fill:'var(--chalk-dim)','font-size':16,'text-anchor':'end'}); ylab.textContent='道のり(km)';
+  svg.appendChild(xlab); svg.appendChild(ylab);
+}
+function drawPath(svg, pts, color){
+  const d = pts.map((p,i)=> (i===0?'M':'L') + ' ' + sxT(p[0]) + ' ' + syD(p[1])).join(' ');
+  svg.appendChild(el('path',{d, fill:'none', stroke:color, 'stroke-width':3.5, 'stroke-linejoin':'round'}));
+}
+const pathA = [[0,0],[20,1],[30,1],[60,4]];
+const pathB = [[10,4],[50,0]];
+
+function yA(t){
+  if(t<=0) return 0;
+  if(t<=20) return t*0.05;
+  if(t<=30) return 1;
+  if(t<=60) return 1+(t-30)*0.1;
+  return 4;
+}
+function yB(t){
+  if(t<10) return 4;
+  if(t<=50) return 5-0.1*t;
+  return 0;
+}
+
+function renderSetup(){
+  const svg = document.getElementById('svgSetup');
+  svg.innerHTML = '';
+  drawAxes(svg);
+  drawPath(svg, pathA, 'var(--cyan)');
+  drawPath(svg, pathB, 'var(--pink)');
+  const la = el('text',{x:sxT(45),y:syD(yA(45))-14,fill:'var(--cyan)','font-size':16,'font-weight':900}); la.textContent='Aさん';
+  svg.appendChild(la);
+  const lb = el('text',{x:sxT(20),y:syD(yB(20))-14,fill:'var(--pink)','font-size':16,'font-weight':900}); lb.textContent='Bさん';
+  svg.appendChild(lb);
+}
+
+const tSlider = document.getElementById('tSlider');
+const moveReadout = document.getElementById('moveReadout');
+function renderMove(){
+  const svg = document.getElementById('svgMove');
+  svg.innerHTML = '';
+  drawAxes(svg);
+  drawPath(svg, pathA, 'var(--cyan)');
+  drawPath(svg, pathB, 'var(--pink)');
+  const t = +tSlider.value;
+  const dA = yA(t), dB = yB(t);
+  svg.appendChild(lineSeg(sxT(t),plotY0,sxT(t),plotY1,{stroke:'var(--yellow)','stroke-width':1.5,'stroke-dasharray':'3 5'}));
+  svg.appendChild(el('circle',{cx:sxT(t),cy:syD(dA),r:8,fill:'var(--cyan)'}));
+  svg.appendChild(el('circle',{cx:sxT(t),cy:syD(dB),r:8,fill:'var(--pink)'}));
+  const gap = Math.abs(dA-dB);
+  const met = gap<0.05;
+  moveReadout.innerHTML = `時刻：${clockLabel(t)}<br>` +
+    `<span style="color:var(--cyan);">Aさん：家から${dA.toFixed(2)}km</span><br>` +
+    `<span style="color:var(--pink);">Bさん：家から${dB.toFixed(2)}km</span><br>` +
+    (met ? `<span style="color:var(--yellow);">2人は出会っている！</span>` : `2人の間：${gap.toFixed(2)}km`);
+}
+tSlider.addEventListener('input', renderMove);
+
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+let idx = 0;
+slides.forEach((_,i)=>{ const d = document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d); });
+function show(i){
+  idx = Math.max(0, Math.min(slides.length-1, i));
+  slides.forEach((s,j)=>s.classList.toggle('active', j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
+  document.getElementById('cnt').textContent = idx+1;
+  if(idx===0) renderSetup();
+  if(idx===1) renderMove();
+}
+document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
+window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+
+renderSetup();
+show(0);
+</script>
+</body>
+</html>
