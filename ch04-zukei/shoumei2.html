@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>証明の進め方</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.35rem, 2.9vw, 2.1rem); margin: 0 0 .7em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(46vw,460px); height:auto; }
+.caption{ max-width: 700px; text-align:center; color: var(--chalk-dim); font-size: clamp(.86rem,1.25vw,1rem); line-height:1.7; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .75em 1.1em;
+  border-radius: 4px; max-width: 780px; text-align:left; font-size: clamp(.88rem,1.3vw,1.02rem); line-height:1.75; margin-bottom:.7em;
+}
+.stepnum{
+  flex-shrink:0; width:1.7em; height:1.7em; border-radius:50%; background: var(--yellow); color:#20301f;
+  font-weight:900; font-size:.9em; display:flex; align-items:center; justify-content:center;
+}
+.proc-step{ display:flex; align-items:flex-start; gap:.8em; padding:.55em .2em; border-bottom:1px solid var(--rule); font-size: clamp(.9rem,1.35vw,1.04rem); line-height:1.6; }
+.proc-step b{ color: var(--yellow); }
+.hyp-box{ display:flex; gap: 1em; flex-wrap:wrap; justify-content:center; max-width:780px; margin-bottom:.6em; }
+.hyp-card{ flex:1 1 220px; border-radius:10px; padding:.8em 1.1em; text-align:left; font-size: clamp(.86rem,1.3vw,1rem); line-height:1.75; }
+.hyp-card.hyp{ border-left:3px solid var(--cyan); background:rgba(126,200,227,0.08); }
+.hyp-card.fact{ border-left:3px solid var(--chalk-dim); background:rgba(242,240,230,0.04); }
+.hyp-card.con{ border-left:3px solid var(--pink); background:rgba(239,157,176,0.08); }
+.hyp-card .tag{ font-weight:900; font-size:.85em; color:var(--chalk-dim); margin-bottom:.3em; }
+.proof2{ width:100%; max-width:600px; display:flex; flex-direction:column; gap:.15em; font-size: clamp(.84rem,1.25vw,.98rem); }
+.proof2 .p-header{ font-weight:700; margin-bottom:.3em; }
+.proof2 .p-row{ display:flex; align-items:center; gap:.6em; flex-wrap:wrap; }
+.proof2 .p-label{ flex-shrink:0; width:3.4em; font-weight:700; color:var(--chalk-dim); }
+.proof2 .p-hyp{ background: rgba(126,200,227,0.18); border:1.5px solid var(--cyan); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-extra{ background: rgba(242,240,230,0.04); border:1.5px solid var(--rule); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-con{ background: rgba(244,151,108,0.18); border:1.5px solid var(--orange); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-arrowrow{ display:flex; align-items:center; gap:.8em; margin:.25em 0 .25em 1.7em; }
+.proof2 .p-arrow{ color:var(--yellow); font-size:1.2em; flex-shrink:0; }
+.proof2 .p-annot{ color:var(--chalk-dim); font-size:.85em; line-height:1.5; }
+.proof2 .p-annot b{ color:var(--yellow); }
+.proof2 .p-center{ margin-left:1.7em; font-weight:900; color:var(--chalk); }
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.55em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(.95rem,1.6vw,1.15rem); line-height:1.55; padding: .35em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; z-index:10; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; z-index:10; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; z-index:10; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 図形の性質</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 3</div>
+
+  <!-- 1: 証明の手順(全体像) -->
+  <section class="slide active">
+    <h2 class="disp">① 証明を書く手順</h2>
+    <div class="definition-box">証明は、次の手順で組み立てていくとよい。</div>
+    <div class="controls" style="max-width:720px; margin:0 auto; width:100%;">
+      <div class="proc-step"><span class="stepnum">1</span><span><b>結論</b>を確認する（何を証明したいのか）</span></div>
+      <div class="proc-step"><span class="stepnum">2</span><span><b>着目する三角形</b>を決める（結論に出てくる辺・角をふくむ三角形をさがす）</span></div>
+      <div class="proc-step"><span class="stepnum">3</span><span><b>仮定</b>を整理する（問題文からわかっていること）</span></div>
+      <div class="proc-step"><span class="stepnum">4</span><span><b>図から分かること</b>を追加する（共通な辺・対頂角など）</span></div>
+      <div class="proc-step"><span class="stepnum">5</span><span>使える<b>合同条件</b>を確認する</span></div>
+      <div class="proc-step"><span class="stepnum">6</span><span><b>証明を書く</b>（仮定→根拠→結論の順）</span></div>
+    </div>
+    <div class="caption">このあと、別の例題で、この手順を1つずつ確認していこう。</div>
+  </section>
+
+  <!-- 2: STEP1-2 結論の確認と着目する三角形 -->
+  <section class="slide">
+    <h2 class="disp">② 結論を確認し、着目する三角形を決める</h2>
+  <!-- 2: 手順を1つずつ確認しながら証明を完成させる -->
+  <section class="slide">
+    <h2 class="disp">② 手順を1つずつ確認しよう</h2>
+    <div class="definition-box">四角形ABCDで、AB＝CB、AD＝CDである。対角線BDをひくとき、∠BAD＝∠BCDであることを証明したい。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgStep" viewBox="0 0 900 600"></svg>
+      <div class="controls" style="max-width:420px;">
+        <div><label for="stepSlider" style="color:var(--chalk-dim); font-size:.88em;">①の手順をスライダーで進める</label>
+          <input type="range" id="stepSlider" min="1" max="6" step="1" value="1" style="width:100%; accent-color:var(--yellow);">
+        </div>
+        <div id="stepPanel" class="proof2" style="margin-top:.6em;"></div>
+      </div>
+    </div>
+    <div class="caption" id="stepCaption"></div>
+  </section>
+
+  <!-- 3: まとめ -->
+  <section class="slide">
+    <h2 class="disp">③ まとめ</h2>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span><span>まず<b>結論</b>を確認し、結論に出てくる辺・角をふくむ<b>2つの三角形</b>を見つける。</span></li>
+      <li><span class="mark yellow">◆</span><span><b>仮定</b>と、<b>図から分かること</b>（共通な辺、対頂角など）を整理する。</span></li>
+      <li><span class="mark orange">◆</span><span>そろった条件から、使える<b>合同条件</b>を確認する。</span></li>
+      <li><span class="mark pink">◆</span><span>仮定→根拠（合同条件）→合同→合同な図形の性質→結論、の順に証明を書く。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+
+<script>
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(svgns, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function lineSeg(x1,y1,x2,y2, extra){ return el('line', Object.assign({x1,y1,x2,y2, stroke:'var(--chalk)', 'stroke-width':2.5, 'stroke-linecap':'round'}, extra||{})); }
+function tickMarks(svg, p1, p2, count, color){
+  const mx=(p1[0]+p2[0])/2, my=(p1[1]+p2[1])/2;
+  const dx=p2[0]-p1[0], dy=p2[1]-p1[1];
+  const len=Math.hypot(dx,dy);
+  const ux=dx/len, uy=dy/len, px=-uy, py=ux;
+  const spacing=8, tickLen=15;
+  const total=(count-1)*spacing;
+  for(let i=0;i<count;i++){
+    const off=-total/2+i*spacing;
+    const cx=mx+ux*off, cy=my+uy*off;
+    const x1=cx+px*tickLen/2, y1=cy+py*tickLen/2;
+    const x2=cx-px*tickLen/2, y2=cy-py*tickLen/2;
+    svg.appendChild(lineSeg(x1,y1,x2,y2,{stroke:color,'stroke-width':2.5}));
+  }
+}
+function vlabel(svg, p, dx, dy, text, color, size){
+  const t=el('text',{x:p[0]+dx,y:p[1]+dy,fill:color||'var(--chalk-dim)','font-size':size||18,'font-weight':700});
+  t.textContent=text;
+  svg.appendChild(t);
+}
+
+// ---------- shared geometry: kite ABCD (AB=CB, AD=CD), symmetric about diagonal BD ----------
+const B=[450,120], D=[450,480], A=[280,300], C=[620,300];
+function drawKite(svg, withTriangles){
+  const outline = `M ${A[0]} ${A[1]} L ${B[0]} ${B[1]} L ${C[0]} ${C[1]} L ${D[0]} ${D[1]} Z`;
+  svg.appendChild(el('path',{d:outline, fill:'rgba(242,240,230,0.04)', stroke:'var(--chalk)', 'stroke-width':2.5, 'stroke-linejoin':'round'}));
+  svg.appendChild(lineSeg(B[0],B[1],D[0],D[1]));
+  if(withTriangles){
+    svg.appendChild(el('path',{d:`M ${A[0]} ${A[1]} L ${B[0]} ${B[1]} L ${D[0]} ${D[1]} Z`, fill:'var(--cyan)', opacity:0.1}));
+    svg.appendChild(el('path',{d:`M ${C[0]} ${C[1]} L ${B[0]} ${B[1]} L ${D[0]} ${D[1]} Z`, fill:'var(--orange)', opacity:0.1}));
+  }
+  [['A',A,-24,4],['B',B,-8,-16],['C',C,12,4],['D',D,-8,28]].forEach(([name,p,dx,dy])=>{
+    svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:5,fill:'var(--chalk)'}));
+    vlabel(svg,p,dx,dy,name,'var(--chalk)',19);
+  });
+}
+
+function polar(cx,cy,r,deg){ const a=deg*Math.PI/180; return [cx+r*Math.cos(a), cy+r*Math.sin(a)]; }
+function wedgePath(cx,cy,r,startDeg,endDeg){
+  const [x1,y1]=polar(cx,cy,r,startDeg), [x2,y2]=polar(cx,cy,r,endDeg);
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
+}
+function angleArc(svg, V, N1, N2, r, color){
+  const a1=Math.atan2(N1[1]-V[1],N1[0]-V[0])*180/Math.PI;
+  const a2=Math.atan2(N2[1]-V[1],N2[0]-V[0])*180/Math.PI;
+  let start=a1, diff=((a2-a1)%360+360)%360;
+  if(diff>180){ start=a2; diff=360-diff; }
+  const end=start+diff;
+  svg.appendChild(el('path',{d:wedgePath(V[0],V[1],r,start,end), fill:color, opacity:0.5, stroke:color, 'stroke-width':2}));
+}
+
+// ---------- SLIDE 2: 手順をスライダーで1つずつ確認 ----------
+const stepSlider = document.getElementById('stepSlider');
+const stepPanel = document.getElementById('stepPanel');
+const stepCaption = document.getElementById('stepCaption');
+const stepCaptions = {
+  1: '結論に出てくる辺・角を確認する。',
+  2: '結論に出てくる角をふくむ2つの三角形をさがす。',
+  3: '問題文からわかっていること（仮定）を整理する。',
+  4: '図から分かること（共通な辺など）を追加する。',
+  5: '3組の辺がそろったので、使える合同条件を確認する。',
+  6: '合同な図形の性質を使って、結論を導く。'
+};
+function renderStep(){
+  const step = +stepSlider.value;
+  const svg = document.getElementById('svgStep');
+  svg.innerHTML='';
+  drawKite(svg, step>=2);
+  if(step>=3){
+    tickMarks(svg, A, B, 1, 'var(--cyan)');
+    tickMarks(svg, C, B, 1, 'var(--cyan)');
+    tickMarks(svg, A, D, 2, 'var(--cyan)');
+    tickMarks(svg, C, D, 2, 'var(--cyan)');
+  }
+  if(step>=4){
+    tickMarks(svg, B, D, 3, 'var(--chalk-dim)');
+  }
+  if(step>=6){
+    angleArc(svg, A, B, D, 34, 'var(--pink)');
+    angleArc(svg, C, B, D, 34, 'var(--pink)');
+  }
+
+  let html = `<div class="p-header">△ABDと△CBDで、</div>`;
+  if(step>=3){
+    html += `<div class="p-row"><span class="p-label">仮定</span><span class="p-hyp">AB＝CB、AD＝CD</span></div>`;
+  }
+  if(step>=4){
+    html += `<div class="p-row"><span class="p-label"></span><span class="p-extra">BD＝BD<br><span style="font-size:.78em; color:var(--chalk-dim);">（共通な辺）</span></span></div>`;
+  }
+  if(step>=5){
+    html += `<div class="p-arrowrow"><span class="p-arrow">▼</span><span class="p-annot">◀ <b>三角形の合同条件</b><br>3組の辺が、それぞれ等しい</span></div>`;
+    html += `<div class="p-center">△ABD≡△CBD</div>`;
+  }
+  if(step>=6){
+    html += `<div class="p-arrowrow"><span class="p-arrow">▼</span><span class="p-annot">◀ <b>合同な図形の性質</b><br>対応する角は等しい</span></div>`;
+    html += `<div class="p-row"><span class="p-label">結論</span><span class="p-con">∠BAD＝∠BCD</span></div>`;
+  }
+  if(step<3){
+    html += `<div class="p-row" style="color:var(--chalk-dim); font-size:.9em;">（結論∠BAD＝∠BCDは、△ABDと△CBDにふくまれる → この2つの三角形に着目）</div>`;
+  }
+  stepPanel.innerHTML = html;
+  stepCaption.textContent = stepCaptions[step];
+}
+stepSlider.addEventListener('input', renderStep);
+
+// ---------- slide navigation ----------
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+let idx = 0;
+slides.forEach((_,i)=>{ const d = document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d); });
+function show(i){
+  idx = Math.max(0, Math.min(slides.length-1, i));
+  slides.forEach((s,j)=>s.classList.toggle('active', j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
+  document.getElementById('cnt').textContent = idx+1;
+  if(idx===1) renderStep();
+}
+document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
+window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+
+show(0);
+</script>
+</body>
+</html>
