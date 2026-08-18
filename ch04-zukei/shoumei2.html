@@ -77,6 +77,33 @@ ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrin
 .mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
 .nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
 .nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.step-btn{
+  background:none; border:1.5px solid var(--chalk-dim); color:var(--chalk);
+  padding:.4em 1em; border-radius:999px; font-size:.9em; cursor:pointer;
+  font-family:'Zen Kaku Gothic New',sans-serif; transition: all .2s ease;
+}
+.step-btn:hover{ border-color:var(--yellow); color:var(--yellow); }
+.step-btn:disabled{ opacity:.35; cursor:default; }
+.step-btn:disabled:hover{ border-color:var(--chalk-dim); color:var(--chalk); }
+.tracker{ display:flex; gap:.5em; flex-wrap:wrap; justify-content:center; max-width:820px; margin-bottom:.7em; }
+.track-item{
+  display:flex; align-items:center; gap:.4em; font-size: clamp(.72rem,1.1vw,.86rem);
+  padding:.4em .7em; border-radius:999px; border:1.5px solid var(--rule); color:var(--chalk-dim);
+  opacity:.4; transition: all .2s ease;
+}
+.track-item .tnum{
+  width:1.4em; height:1.4em; border-radius:50%; background:var(--rule); color:var(--board);
+  font-weight:900; font-size:.85em; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.track-item.done{ opacity:.7; color:var(--chalk); border-color:var(--chalk-dim); }
+.track-item.done .tnum{ background:var(--chalk-dim); color:var(--board); }
+.track-item.now{ opacity:1; color:var(--yellow); border-color:var(--yellow); background:rgba(244,211,94,0.1); font-weight:700; }
+.track-item.now .tnum{ background:var(--yellow); color:#20301f; }
+.proofbox2{
+  border:1px solid var(--rule); border-radius:12px; padding:1.1em 1.4em; max-width:480px; width:100%;
+  text-align:left; font-size: clamp(.9rem,1.4vw,1.04rem); line-height:2.1;
+}
+.proofbox2 b{ color:var(--yellow); }
 .nav button:hover{ border-color: var(--chalk); }
 .dots{ display:flex; gap:.5em; }
 .dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
@@ -99,7 +126,7 @@ ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrin
     <a href="../index.html">← 単元一覧</a>
     <a href="index.html">← 時間選択</a>
   </div>
-  <div class="counter"><span id="cnt">1</span> / 3</div>
+  <div class="counter"><span id="cnt">1</span> / 4</div>
 
   <!-- 1: 証明の手順(全体像) -->
   <section class="slide active">
@@ -116,28 +143,59 @@ ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrin
     <div class="caption">このあと、別の例題で、この手順を1つずつ確認していこう。</div>
   </section>
 
-  <!-- 2: STEP1-2 結論の確認と着目する三角形 -->
-  <section class="slide">
-    <h2 class="disp">② 結論を確認し、着目する三角形を決める</h2>
   <!-- 2: 手順を1つずつ確認しながら証明を完成させる -->
   <section class="slide">
     <h2 class="disp">② 手順を1つずつ確認しよう</h2>
     <div class="definition-box">四角形ABCDで、AB＝CB、AD＝CDである。対角線BDをひくとき、∠BAD＝∠BCDであることを証明したい。</div>
+    <div class="tracker" id="tracker">
+      <div class="track-item" id="track1"><span class="tnum">1</span>結論を確認</div>
+      <div class="track-item" id="track2"><span class="tnum">2</span>着目する三角形</div>
+      <div class="track-item" id="track3"><span class="tnum">3</span>仮定を整理</div>
+      <div class="track-item" id="track4"><span class="tnum">4</span>図から分かること</div>
+      <div class="track-item" id="track5"><span class="tnum">5</span>合同条件</div>
+      <div class="track-item" id="track6"><span class="tnum">6</span>証明を書く</div>
+    </div>
     <div class="diagram-row">
       <svg class="diagram" id="svgStep" viewBox="0 0 900 600"></svg>
-      <div class="controls" style="max-width:420px;">
-        <div><label for="stepSlider" style="color:var(--chalk-dim); font-size:.88em;">①の手順をスライダーで進める</label>
+      <div class="controls" style="width:420px; max-width:420px; flex-shrink:0;">
+        <div>
+          <div style="display:flex; align-items:center; justify-content:center; gap:1em; margin-bottom:.4em;">
+            <button id="stepPrev" class="step-btn">‹ 前へ</button>
+            <span id="stepCount" style="font-weight:900; color:var(--yellow); font-size:1.1em;">1 / 6</span>
+            <button id="stepNext" class="step-btn">次へ ›</button>
+          </div>
+          <label for="stepSlider" style="color:var(--chalk-dim); font-size:.82em;">（スライダーでも動かせます）</label>
           <input type="range" id="stepSlider" min="1" max="6" step="1" value="1" style="width:100%; accent-color:var(--yellow);">
         </div>
-        <div id="stepPanel" class="proof2" style="margin-top:.6em;"></div>
+        <div id="stepPanel" class="proof2" style="margin-top:.6em; min-height:250px;"></div>
       </div>
     </div>
     <div class="caption" id="stepCaption"></div>
   </section>
 
-  <!-- 3: まとめ -->
+  <!-- 3: 証明(完成形) -->
   <section class="slide">
-    <h2 class="disp">③ まとめ</h2>
+    <h2 class="disp">③ 証明を書こう</h2>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgFinal" viewBox="0 0 900 600" style="width:min(38vw,380px);"></svg>
+      <div class="proofbox2">
+        <b>【証明】</b><br>
+        △ABDと△CBDにおいて、<br>
+        仮定より　AB＝CB　……①<br>
+        仮定より　AD＝CD　……②<br>
+        共通な辺なので　BD＝BD　……③<br>
+        ①②③より、3組の辺が、それぞれ等しいので、<br>
+        <b>△ABD≡△CBD</b><br>
+        合同な図形の対応する角は等しいので、<br>
+        <b>∠BAD＝∠BCD</b>
+      </div>
+    </div>
+    <div class="caption">これが、②で1つずつ確認した手順をまとめて書いた、完成した証明の文章。</div>
+  </section>
+
+  <!-- 4: まとめ -->
+  <section class="slide">
+    <h2 class="disp">④ まとめ</h2>
     <ul class="points">
       <li><span class="mark cyan">◆</span><span>まず<b>結論</b>を確認し、結論に出てくる辺・角をふくむ<b>2つの三角形</b>を見つける。</span></li>
       <li><span class="mark yellow">◆</span><span><b>仮定</b>と、<b>図から分かること</b>（共通な辺、対頂角など）を整理する。</span></li>
@@ -225,6 +283,10 @@ function renderStep(){
   const svg = document.getElementById('svgStep');
   svg.innerHTML='';
   drawKite(svg, step>=2);
+  if(step===1){
+    angleArc(svg, A, B, D, 34, 'var(--yellow)');
+    angleArc(svg, C, B, D, 34, 'var(--yellow)');
+  }
   if(step>=3){
     tickMarks(svg, A, B, 1, 'var(--cyan)');
     tickMarks(svg, C, B, 1, 'var(--cyan)');
@@ -239,28 +301,66 @@ function renderStep(){
     angleArc(svg, C, B, D, 34, 'var(--pink)');
   }
 
-  let html = `<div class="p-header">△ABDと△CBDで、</div>`;
-  if(step>=3){
-    html += `<div class="p-row"><span class="p-label">仮定</span><span class="p-hyp">AB＝CB、AD＝CD</span></div>`;
-  }
-  if(step>=4){
-    html += `<div class="p-row"><span class="p-label"></span><span class="p-extra">BD＝BD<br><span style="font-size:.78em; color:var(--chalk-dim);">（共通な辺）</span></span></div>`;
-  }
-  if(step>=5){
-    html += `<div class="p-arrowrow"><span class="p-arrow">▼</span><span class="p-annot">◀ <b>三角形の合同条件</b><br>3組の辺が、それぞれ等しい</span></div>`;
-    html += `<div class="p-center">△ABD≡△CBD</div>`;
-  }
-  if(step>=6){
-    html += `<div class="p-arrowrow"><span class="p-arrow">▼</span><span class="p-annot">◀ <b>合同な図形の性質</b><br>対応する角は等しい</span></div>`;
-    html += `<div class="p-row"><span class="p-label">結論</span><span class="p-con">∠BAD＝∠BCD</span></div>`;
-  }
-  if(step<3){
-    html += `<div class="p-row" style="color:var(--chalk-dim); font-size:.9em;">（結論∠BAD＝∠BCDは、△ABDと△CBDにふくまれる → この2つの三角形に着目）</div>`;
+  let html = '';
+  if(step===1){
+    html = `<div style="text-align:center; padding:1.4em .5em;">
+      <div style="color:var(--chalk-dim); font-size:.85em; margin-bottom:.5em;">これから証明したいこと</div>
+      <div style="font-size:1.6em; font-weight:900; color:var(--pink);">結論：∠BAD＝∠BCD</div>
+    </div>`;
+  } else {
+    html = `<div class="p-header">△ABDと△CBDで、</div>`;
+    if(step===2){
+      html += `<div class="p-row" style="color:var(--chalk-dim); font-size:.9em;">（∠BADは△ABDに、∠BCDは△CBDにふくまれる → この2つの三角形に着目する）</div>`;
+    }
+    if(step>=3){
+      html += `<div class="p-row"><span class="p-label">仮定</span><span class="p-hyp">AB＝CB、AD＝CD</span></div>`;
+    }
+    if(step>=4){
+      html += `<div class="p-row"><span class="p-label"></span><span class="p-extra">BD＝BD<br><span style="font-size:.78em; color:var(--chalk-dim);">（共通な辺）</span></span></div>`;
+    }
+    if(step>=5){
+      html += `<div class="p-arrowrow"><span class="p-arrow">▼</span><span class="p-annot">◀ <b>三角形の合同条件</b><br>3組の辺が、それぞれ等しい</span></div>`;
+      html += `<div class="p-center">△ABD≡△CBD</div>`;
+    }
+    if(step>=6){
+      html += `<div class="p-arrowrow"><span class="p-arrow">▼</span><span class="p-annot">◀ <b>合同な図形の性質</b><br>対応する角は等しい</span></div>`;
+      html += `<div class="p-row"><span class="p-label">結論</span><span class="p-con">∠BAD＝∠BCD</span></div>`;
+    }
   }
   stepPanel.innerHTML = html;
   stepCaption.textContent = stepCaptions[step];
+  document.getElementById('stepCount').textContent = `${step} / 6`;
+  for(let i=1;i<=6;i++){
+    const t = document.getElementById('track'+i);
+    t.classList.toggle('now', i===step);
+    t.classList.toggle('done', i<step);
+  }
+  document.getElementById('stepPrev').disabled = (step<=1);
+  document.getElementById('stepNext').disabled = (step>=6);
 }
 stepSlider.addEventListener('input', renderStep);
+document.getElementById('stepPrev').addEventListener('click', ()=>{
+  stepSlider.value = Math.max(1, +stepSlider.value - 1);
+  renderStep();
+});
+document.getElementById('stepNext').addEventListener('click', ()=>{
+  stepSlider.value = Math.min(6, +stepSlider.value + 1);
+  renderStep();
+});
+
+// ---------- SLIDE 3: 証明(完成形) ----------
+function renderFinal(){
+  const svg = document.getElementById('svgFinal');
+  svg.innerHTML='';
+  drawKite(svg, true);
+  tickMarks(svg, A, B, 1, 'var(--cyan)');
+  tickMarks(svg, C, B, 1, 'var(--cyan)');
+  tickMarks(svg, A, D, 2, 'var(--cyan)');
+  tickMarks(svg, C, D, 2, 'var(--cyan)');
+  tickMarks(svg, B, D, 3, 'var(--chalk-dim)');
+  angleArc(svg, A, B, D, 34, 'var(--pink)');
+  angleArc(svg, C, B, D, 34, 'var(--pink)');
+}
 
 // ---------- slide navigation ----------
 const slides = document.querySelectorAll('.slide');
@@ -273,6 +373,7 @@ function show(i){
   dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
   document.getElementById('cnt').textContent = idx+1;
   if(idx===1) renderStep();
+  if(idx===2) renderFinal();
 }
 document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
 document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
