@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>二等辺三角形</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.4rem, 3vw, 2.2rem); margin: 0 0 .7em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(46vw,460px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .6em; min-width: 260px; max-width: 400px; font-size: clamp(.9rem,1.2vw,1.02rem); }
+.caption{ max-width: 700px; text-align:center; color: var(--chalk-dim); font-size: clamp(.88rem,1.3vw,1.02rem); line-height:1.75; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 780px; text-align:left; font-size: clamp(.9rem,1.4vw,1.06rem); line-height:1.8; margin-bottom:.8em;
+}
+.proof2{ width:100%; max-width:520px; display:flex; flex-direction:column; gap:.15em; font-size: clamp(.86rem,1.3vw,1rem); }
+.proof2 .p-header{ font-weight:700; margin-bottom:.3em; }
+.proof2 .p-row{ display:flex; align-items:center; gap:.6em; flex-wrap:wrap; }
+.proof2 .p-label{ flex-shrink:0; width:3.4em; font-weight:700; color:var(--chalk-dim); }
+.proof2 .p-hyp{ background: rgba(126,200,227,0.18); border:1.5px solid var(--cyan); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-extra{ background: rgba(242,240,230,0.04); border:1.5px solid var(--rule); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-con{ background: rgba(244,151,108,0.18); border:1.5px solid var(--orange); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-arrowrow{ display:flex; align-items:center; gap:.8em; margin:.25em 0 .25em 1.7em; }
+.proof2 .p-arrow{ color:var(--yellow); font-size:1.2em; flex-shrink:0; }
+.proof2 .p-annot{ color:var(--chalk-dim); font-size:.85em; line-height:1.5; }
+.proof2 .p-annot b{ color:var(--yellow); }
+.proof2 .p-center{ margin-left:1.7em; font-weight:900; color:var(--chalk); }
+.vocab-row{ display:flex; gap:1em; flex-wrap:wrap; justify-content:center; max-width:780px; margin-bottom:.6em; }
+.vocab-card{ flex:1 1 200px; border-radius:10px; padding:.7em 1em; text-align:center; font-size: clamp(.85rem,1.3vw,1rem); }
+.vocab-card .vname{ font-weight:900; margin-bottom:.2em; }
+.vocab-card.va{ border:1.5px solid var(--yellow); color:var(--yellow); }
+.vocab-card.vb{ border:1.5px solid var(--cyan); color:var(--cyan); }
+.vocab-card.vc{ border:1.5px solid var(--pink); color:var(--pink); }
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.55em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(.95rem,1.6vw,1.15rem); line-height:1.55; padding: .35em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; z-index:10; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; z-index:10; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; z-index:10; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 図形の性質と証明</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 5</div>
+
+  <!-- 1: 定義とは -->
+  <section class="slide active">
+    <h2 class="disp">① 「定義」とは</h2>
+    <div class="definition-box" style="border-left-color:var(--cyan);"><b style="color:var(--cyan);">定義</b>：用語の意味を、はっきりと決めたもの。</div>
+    <div class="definition-box">たとえば「三角形」の定義は「3つの線分で囲まれた図形」。<br>このように、ことばの意味を誰が読んでも同じように分かるように、はっきりと決めたものが定義。</div>
+    <div class="caption">数学では、ことばの意味があいまいだと困る。だから、まず定義をはっきりさせてから、そこから成り立つ<b>性質</b>を証明していく。この章では、この流れを何度も使う。</div>
+  </section>
+
+  <!-- 2: 二等辺三角形とは -->
+  <section class="slide">
+    <h2 class="disp">② 二等辺三角形とは</h2>
+    <div class="definition-box"><b>定義</b>：<b>2つの辺の長さが等しい</b>三角形を、二等辺三角形という。</div>
+    <svg class="diagram" id="svgDef" viewBox="0 0 900 600"></svg>
+    <div class="vocab-row">
+      <div class="vocab-card va"><div class="vname">頂角</div>長さが等しい2辺にはさまれた角</div>
+      <div class="vocab-card vb"><div class="vname">底辺</div>頂角に対する辺（残りの1辺）</div>
+      <div class="vocab-card vc"><div class="vname">底角</div>底辺の両端の角</div>
+    </div>
+    <div class="caption">△ABCで、AB＝ACのとき、∠Aが頂角、辺BCが底辺、∠Bと∠Cが底角。<br>次のページからは、この定義から導かれる<b>性質</b>を証明していく。</div>
+  </section>
+
+  <!-- 3: 性質1(底角は等しい)の証明 -->
+  <section class="slide">
+    <h2 class="disp">③ 性質1：底角は等しい</h2>
+    <div class="definition-box">二等辺三角形の<b>2つの底角は等しい</b>。（AB＝ACならば、∠B＝∠C）</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgProof1" viewBox="0 0 900 600" style="width:min(38vw,380px);"></svg>
+      <div class="proof2">
+        <div class="p-header">頂角Aの二等分線をひき、辺BCとの交点をDとする。<br>△ABDと△ACDにおいて、</div>
+        <div class="p-row">
+          <span class="p-label">仮定</span>
+          <span class="p-hyp">AB＝AC</span>
+          <span class="p-hyp">∠BAD＝∠CAD</span>
+          <span class="p-extra">AD＝AD<br><span style="font-size:.78em; color:var(--chalk-dim);">（共通な辺）</span></span>
+        </div>
+        <div class="p-arrowrow">
+          <span class="p-arrow">▼</span>
+          <span class="p-annot">◀ <b>三角形の合同条件</b><br>2組の辺とその間の角が、それぞれ等しい</span>
+        </div>
+        <div class="p-center">△ABD≡△ACD</div>
+        <div class="p-arrowrow">
+          <span class="p-arrow">▼</span>
+          <span class="p-annot">◀ <b>合同な図形の性質</b><br>対応する角は等しい</span>
+        </div>
+        <div class="p-row">
+          <span class="p-label">結論</span>
+          <span class="p-con">∠B＝∠C</span>
+        </div>
+      </div>
+    </div>
+    <div class="caption">頂角の二等分線をひくことで、2つの合同な三角形に分けるのがポイント。</div>
+  </section>
+
+  <!-- 3: 性質2(頂角の二等分線は底辺を垂直に2等分する) -->
+  <section class="slide">
+    <h2 class="disp">④ 性質2：頂角の二等分線と底辺</h2>
+    <div class="definition-box">二等辺三角形の<b>頂角の二等分線</b>は、<b>底辺を垂直に2等分</b>する。</div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgProof2" viewBox="0 0 900 600" style="width:min(38vw,380px);"></svg>
+      <div class="controls">
+        <div class="definition-box" style="margin-bottom:0;">
+          ②で証明した△ABD≡△ACDから、合同な図形の対応する部分がすべて等しいと分かる。<br><br>
+          対応する辺より　<b style="color:var(--cyan);">BD＝CD</b><br>
+          （BDとCDの和がBCなので、Dは辺BCの中点）<br><br>
+          対応する角より　<b style="color:var(--pink);">∠ADB＝∠ADC</b><br>
+          この2つの角の和は180°（一直線上の角）なので、<br>
+          <b style="color:var(--pink);">∠ADB＝∠ADC＝90°</b>
+        </div>
+      </div>
+    </div>
+    <div class="caption">BD＝CD（2等分）と、∠ADB＝∠ADC＝90°（垂直）の両方が、同時に示せる。</div>
+  </section>
+
+  <!-- 4: まとめ -->
+  <section class="slide">
+    <h2 class="disp">⑤ まとめ</h2>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span><span><b>2つの辺の長さが等しい</b>三角形を、二等辺三角形という（頂角・底辺・底角）。</span></li>
+      <li><span class="mark yellow">◆</span><span>二等辺三角形の<b>2つの底角は等しい</b>。</span></li>
+      <li><span class="mark orange">◆</span><span><b>頂角の二等分線</b>は、<b>底辺を垂直に2等分</b>する。</span></li>
+      <li><span class="mark pink">◆</span><span>どちらも、頂角の二等分線をひいて<b>2つの合同な三角形</b>に分けることで証明できる。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+
+<script>
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(svgns, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function lineSeg(x1,y1,x2,y2, extra){ return el('line', Object.assign({x1,y1,x2,y2, stroke:'var(--chalk)', 'stroke-width':2.5, 'stroke-linecap':'round'}, extra||{})); }
+function polar(cx,cy,r,deg){ const a=deg*Math.PI/180; return [cx+r*Math.cos(a), cy+r*Math.sin(a)]; }
+function wedgePath(cx,cy,r,startDeg,endDeg){
+  const [x1,y1]=polar(cx,cy,r,startDeg), [x2,y2]=polar(cx,cy,r,endDeg);
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
+}
+function angleArc(svg, V, N1, N2, r, color){
+  const a1=Math.atan2(N1[1]-V[1],N1[0]-V[0])*180/Math.PI;
+  const a2=Math.atan2(N2[1]-V[1],N2[0]-V[0])*180/Math.PI;
+  let start=a1, diff=((a2-a1)%360+360)%360;
+  if(diff>180){ start=a2; diff=360-diff; }
+  const end=start+diff;
+  svg.appendChild(el('path',{d:wedgePath(V[0],V[1],r,start,end), fill:color, opacity:0.5, stroke:color, 'stroke-width':2}));
+}
+function tickMarks(svg, p1, p2, count, color){
+  const mx=(p1[0]+p2[0])/2, my=(p1[1]+p2[1])/2;
+  const dx=p2[0]-p1[0], dy=p2[1]-p1[1];
+  const len=Math.hypot(dx,dy);
+  const ux=dx/len, uy=dy/len, px=-uy, py=ux;
+  const spacing=8, tickLen=15;
+  const total=(count-1)*spacing;
+  for(let i=0;i<count;i++){
+    const off=-total/2+i*spacing;
+    const cx=mx+ux*off, cy=my+uy*off;
+    const x1=cx+px*tickLen/2, y1=cy+py*tickLen/2;
+    const x2=cx-px*tickLen/2, y2=cy-py*tickLen/2;
+    svg.appendChild(lineSeg(x1,y1,x2,y2,{stroke:color,'stroke-width':2.5}));
+  }
+}
+function vlabel(svg, p, dx, dy, text, color, size){
+  const t=el('text',{x:p[0]+dx,y:p[1]+dy,fill:color||'var(--chalk-dim)','font-size':size||18,'font-weight':700});
+  t.textContent=text;
+  svg.appendChild(t);
+}
+function rightAngleMark(svg, V, N1, N2, size){
+  const d1x=N1[0]-V[0], d1y=N1[1]-V[1]; const len1=Math.hypot(d1x,d1y);
+  const d2x=N2[0]-V[0], d2y=N2[1]-V[1]; const len2=Math.hypot(d2x,d2y);
+  const p1=[V[0]+d1x/len1*size, V[1]+d1y/len1*size];
+  const p2=[V[0]+d2x/len2*size, V[1]+d2y/len2*size];
+  const p3=[p1[0]+d2x/len2*size, p1[1]+d2y/len2*size];
+  svg.appendChild(el('path',{d:`M ${p1[0]} ${p1[1]} L ${p3[0]} ${p3[1]} L ${p2[0]} ${p2[1]}`, fill:'none', stroke:'var(--chalk)', 'stroke-width':2}));
+}
+
+// ---------- shared geometry: isosceles triangle ABC (AB=AC), D on BC (bisector foot) ----------
+const A=[450,100], B=[220,450], C=[680,450], D=[450,450];
+function drawTri(svg, withBisector){
+  const outline = `M ${A[0]} ${A[1]} L ${B[0]} ${B[1]} L ${C[0]} ${C[1]} Z`;
+  svg.appendChild(el('path',{d:outline, fill:'rgba(242,240,230,0.04)', stroke:'var(--chalk)', 'stroke-width':2.5, 'stroke-linejoin':'round'}));
+  if(withBisector){
+    svg.appendChild(lineSeg(A[0],A[1],D[0],D[1]));
+  }
+  const pts = withBisector ? [['A',A,-8,-16],['B',B,-24,10],['C',C,12,10],['D',D,-6,26]] : [['A',A,-8,-16],['B',B,-24,10],['C',C,12,10]];
+  pts.forEach(([name,p,dx,dy])=>{
+    svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:5,fill:'var(--chalk)'}));
+    vlabel(svg,p,dx,dy,name,'var(--chalk)',19);
+  });
+}
+
+// ---------- SLIDE 1: 二等辺三角形とは ----------
+function renderDef(){
+  const svg = document.getElementById('svgDef');
+  svg.innerHTML='';
+  drawTri(svg, false);
+  tickMarks(svg, A, B, 1, 'var(--cyan)');
+  tickMarks(svg, A, C, 1, 'var(--cyan)');
+  angleArc(svg, A, B, C, 40, 'var(--yellow)');
+  angleArc(svg, B, A, C, 34, 'var(--pink)');
+  angleArc(svg, C, A, B, 34, 'var(--pink)');
+}
+
+// ---------- SLIDE 2: 性質1の証明 ----------
+function renderProof1(){
+  const svg = document.getElementById('svgProof1');
+  svg.innerHTML='';
+  drawTri(svg, true);
+  tickMarks(svg, A, B, 1, 'var(--cyan)');
+  tickMarks(svg, A, C, 1, 'var(--cyan)');
+  tickMarks(svg, A, D, 3, 'var(--yellow)');
+  angleArc(svg, A, B, D, 30, 'var(--yellow)');
+  angleArc(svg, A, D, C, 30, 'var(--yellow)');
+  angleArc(svg, B, A, D, 34, 'var(--pink)');
+  angleArc(svg, C, A, D, 34, 'var(--pink)');
+}
+
+// ---------- SLIDE 3: 性質2 ----------
+function renderProof2(){
+  const svg = document.getElementById('svgProof2');
+  svg.innerHTML='';
+  drawTri(svg, true);
+  tickMarks(svg, B, D, 1, 'var(--cyan)');
+  tickMarks(svg, D, C, 1, 'var(--cyan)');
+  rightAngleMark(svg, D, A, B, 22);
+  rightAngleMark(svg, D, A, C, 22);
+}
+
+// ---------- slide navigation ----------
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+let idx = 0;
+slides.forEach((_,i)=>{ const d = document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d); });
+function show(i){
+  idx = Math.max(0, Math.min(slides.length-1, i));
+  slides.forEach((s,j)=>s.classList.toggle('active', j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
+  document.getElementById('cnt').textContent = idx+1;
+  if(idx===1) renderDef();
+  if(idx===2) renderProof1();
+  if(idx===3) renderProof2();
+}
+document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
+window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+
+show(0);
+</script>
+</body>
+</html>

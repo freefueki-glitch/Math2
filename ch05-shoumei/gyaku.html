@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>仮定と結論を入れかえよう</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.35rem, 2.9vw, 2.1rem); margin: 0 0 .7em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(46vw,460px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .6em; min-width: 260px; max-width: 400px; font-size: clamp(.9rem,1.2vw,1.02rem); }
+.caption{ max-width: 700px; text-align:center; color: var(--chalk-dim); font-size: clamp(.86rem,1.25vw,1rem); line-height:1.7; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .75em 1.1em;
+  border-radius: 4px; max-width: 780px; text-align:left; font-size: clamp(.88rem,1.3vw,1.02rem); line-height:1.75; margin-bottom:.7em;
+}
+.sentence-box{
+  font-size: clamp(1rem,1.9vw,1.3rem); text-align:center; line-height:2;
+  max-width:780px; margin: .5em 0; padding: .4em 0;
+}
+.sentence-box .sc{ padding:.1em .3em; border-radius:5px; font-weight:700; }
+.sentence-box .sc.hyp{ background: rgba(126,200,227,0.22); color: var(--cyan); }
+.sentence-box .sc.con{ background: rgba(239,157,176,0.22); color: var(--pink); }
+.swap-row{ display:flex; align-items:center; justify-content:center; gap:1em; max-width:820px; width:100%; margin:.3em 0; flex-wrap:wrap; }
+.swap-box{
+  flex:1 1 300px; border-radius:10px; padding:.8em 1.1em; font-size: clamp(.88rem,1.4vw,1.02rem); line-height:1.8; text-align:left;
+}
+.swap-box.orig{ border:1.5px solid var(--rule); }
+.swap-box.rev{ border:1.5px solid var(--yellow); background: rgba(244,211,94,0.06); }
+.swap-box .tag{ font-weight:900; font-size:.82em; color:var(--chalk-dim); margin-bottom:.3em; }
+.swap-arrow{ font-size:1.6em; color:var(--yellow); flex-shrink:0; }
+.proof2{ width:100%; max-width:520px; display:flex; flex-direction:column; gap:.15em; font-size: clamp(.86rem,1.3vw,1rem); }
+.proof2 .p-header{ font-weight:700; margin-bottom:.3em; }
+.proof2 .p-row{ display:flex; align-items:center; gap:.6em; flex-wrap:wrap; }
+.proof2 .p-label{ flex-shrink:0; width:3.4em; font-weight:700; color:var(--chalk-dim); }
+.proof2 .p-hyp{ background: rgba(126,200,227,0.18); border:1.5px solid var(--cyan); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-extra{ background: rgba(242,240,230,0.04); border:1.5px solid var(--rule); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-con{ background: rgba(244,151,108,0.18); border:1.5px solid var(--orange); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-arrowrow{ display:flex; align-items:center; gap:.8em; margin:.25em 0 .25em 1.7em; }
+.proof2 .p-arrow{ color:var(--yellow); font-size:1.2em; flex-shrink:0; }
+.proof2 .p-annot{ color:var(--chalk-dim); font-size:.85em; line-height:1.5; }
+.proof2 .p-annot b{ color:var(--yellow); }
+.proof2 .p-center{ margin-left:1.7em; font-weight:900; color:var(--chalk); }
+.step-btn{
+  background:none; border:1.5px solid var(--chalk-dim); color:var(--chalk);
+  padding:.4em 1em; border-radius:999px; font-size:.9em; cursor:pointer;
+  font-family:'Zen Kaku Gothic New',sans-serif; transition: all .2s ease;
+}
+.step-btn:hover{ border-color:var(--yellow); color:var(--yellow); }
+.step-btn:disabled{ opacity:.35; cursor:default; }
+.step-btn:disabled:hover{ border-color:var(--chalk-dim); color:var(--chalk); }
+.tracker{ display:flex; gap:.5em; flex-wrap:wrap; justify-content:center; max-width:820px; margin-bottom:.7em; }
+.track-item{
+  display:flex; align-items:center; gap:.4em; font-size: clamp(.72rem,1.1vw,.86rem);
+  padding:.4em .7em; border-radius:999px; border:1.5px solid var(--rule); color:var(--chalk-dim);
+  opacity:.4; transition: all .2s ease;
+}
+.track-item .tnum{
+  width:1.4em; height:1.4em; border-radius:50%; background:var(--rule); color:var(--board);
+  font-weight:900; font-size:.85em; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.track-item.done{ opacity:.7; color:var(--chalk); border-color:var(--chalk-dim); }
+.track-item.done .tnum{ background:var(--chalk-dim); color:var(--board); }
+.track-item.now{ opacity:1; color:var(--yellow); border-color:var(--yellow); background:rgba(244,211,94,0.1); font-weight:700; }
+.track-item.now .tnum{ background:var(--yellow); color:#20301f; }
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.55em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(.95rem,1.6vw,1.15rem); line-height:1.55; padding: .35em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; z-index:10; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; z-index:10; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; z-index:10; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 図形の性質と証明</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 6</div>
+
+  <!-- 1: 逆とは(用語) -->
+  <section class="slide active">
+    <h2 class="disp">① 「逆」とは</h2>
+    <div class="definition-box">あることがら「<b>AならばBである</b>」で、<b>仮定と結論を入れかえた</b>「BならばAである」を、もとのことがらの<b>逆</b>という。</div>
+    <div class="sentence-box">
+      <span class="sc hyp">四角形である</span>ならば、<span class="sc con">角が4つある</span>。
+    </div>
+    <div class="swap-row">
+      <div class="swap-box orig"><div class="tag">元のことがら</div>四角形ならば、角が4つある。</div>
+      <div class="swap-arrow">⇄</div>
+      <div class="swap-box rev"><div class="tag">逆（仮定と結論を入れかえる）</div>角が4つあれば、四角形である。</div>
+    </div>
+    <div class="caption">仮定（水色）と結論（ピンク）を、そっくりそのまま入れかえるだけ。この例では、逆も正しい。</div>
+  </section>
+
+  <!-- 2: 逆の例(二等辺三角形) -->
+  <section class="slide">
+    <h2 class="disp">② 逆の例：二等辺三角形で確認しよう</h2>
+    <div class="definition-box">1時間目で証明したことがらの、逆を作ってみよう。</div>
+    <div class="sentence-box">
+      <span class="sc hyp">二等辺三角形である</span>ならば、<span class="sc con">底角は等しい</span>。
+    </div>
+    <div class="swap-row">
+      <div class="swap-box orig"><div class="tag">元のことがら（1時間目で証明した）</div>二等辺三角形ならば、底角は等しい。</div>
+      <div class="swap-arrow">⇄</div>
+      <div class="swap-box rev"><div class="tag">逆（仮定と結論を入れかえる）</div>底角が等しい三角形ならば、二等辺三角形である。</div>
+    </div>
+    <div class="caption">この逆が、本当に正しいことがらなのかは、まだ分からない。次のページで、逆がいつも正しいとは限らないことを確認してから、証明していこう。</div>
+  </section>
+
+  <!-- 3: 反例とは(用語) -->
+  <section class="slide">
+    <h2 class="disp">③ 「反例」とは</h2>
+    <div class="definition-box">あることがらが<b>正しくないことを示す</b>には、そのことがらに<b>あてはまらない例</b>を1つ見つければよい。この例を<b>反例</b>という。</div>
+    <div class="swap-row">
+      <div class="swap-box orig"><div class="tag">正しくないことがら</div>2けたの整数ならば、100より大きい。</div>
+    </div>
+    <div class="step2box" style="max-width:600px;">
+      たとえば「<b>15</b>」は2けたの整数だが、100より大きくない。<br>
+      この「15」が<b>反例</b>。反例が1つでも見つかれば、そのことがらは正しくないと言える。
+    </div>
+    <div class="caption">反例は、たった1つ見つければ十分。「正しい」ことを示すにはすべての場合を確かめる必要があるが、「正しくない」ことを示すには例が1つあればよい。</div>
+  </section>
+
+  <!-- 4: 反例の例(面積と合同) -->
+  <section class="slide">
+    <h2 class="disp">④ 反例の例：逆が正しくないことがら</h2>
+    <div class="definition-box">②で作った「底角が等しい三角形は二等辺三角形」のように、<b>逆はいつも正しいとは限らない</b>。反例で確認しよう。</div>
+    <div class="swap-row">
+      <div class="swap-box orig"><div class="tag">元のことがら（正しい）</div>2つの三角形が合同ならば、面積は等しい。</div>
+      <div class="swap-arrow">⇄</div>
+      <div class="swap-box rev"><div class="tag">逆（正しくない）</div>面積が等しい三角形ならば、合同である。</div>
+    </div>
+    <svg class="diagram" id="svgCounter" viewBox="0 0 900 420" style="width:min(78vw,820px);"></svg>
+    <div class="caption">底辺6・高さ4の三角形と、底辺8・高さ3の三角形は、面積はどちらも12で等しいが、形も大きさもちがうので合同ではない。これが反例。</div>
+  </section>
+
+  <!-- 5: 証明(2角が等しい三角形は二等辺三角形) -->
+  <section class="slide">
+    <h2 class="disp">⑤ 「2角が等しい三角形は二等辺三角形」を証明する</h2>
+    <div class="definition-box">△ABCで、∠B＝∠Cならば、AB＝ACであることを証明しよう。</div>
+    <div class="tracker" id="tracker">
+      <div class="track-item" id="track1"><span class="tnum">1</span>結論を確認</div>
+      <div class="track-item" id="track2"><span class="tnum">2</span>着目する三角形</div>
+      <div class="track-item" id="track3"><span class="tnum">3</span>仮定を整理</div>
+      <div class="track-item" id="track4"><span class="tnum">4</span>図から分かること</div>
+      <div class="track-item" id="track5"><span class="tnum">5</span>合同条件</div>
+      <div class="track-item" id="track6"><span class="tnum">6</span>証明を書く</div>
+    </div>
+    <div class="diagram-row">
+      <svg class="diagram" id="svgProof" viewBox="0 0 900 600" style="width:min(38vw,380px);"></svg>
+      <div class="controls" style="width:440px; max-width:440px; flex-shrink:0;">
+        <div>
+          <div style="display:flex; align-items:center; justify-content:center; gap:1em; margin-bottom:.4em;">
+            <button id="stepPrev" class="step-btn">‹ 前へ</button>
+            <span id="stepCount" style="font-weight:900; color:var(--yellow); font-size:1.1em;">1 / 6</span>
+            <button id="stepNext" class="step-btn">次へ ›</button>
+          </div>
+          <label for="stepSlider" style="color:var(--chalk-dim); font-size:.82em;">（スライダーでも動かせます）</label>
+          <input type="range" id="stepSlider" min="1" max="6" step="1" value="1" style="width:100%; accent-color:var(--yellow);">
+        </div>
+        <div id="stepPanel" class="proof2" style="margin-top:.6em; min-height:260px;"></div>
+      </div>
+    </div>
+    <div class="caption" id="stepCaption"></div>
+  </section>
+
+  <!-- 4: まとめ -->
+  <section class="slide">
+    <h2 class="disp">⑥ まとめ</h2>
+    <ul class="points">
+      <li><span class="mark cyan">◆</span><span>「AならばB」の<b>仮定と結論を入れかえた</b>「BならばA」を、もとのことがらの<b>逆</b>という。</span></li>
+      <li><span class="mark yellow">◆</span><span>あることがらが正しくても、<b>逆が正しいとは限らない</b>。正しくないことは<b>反例</b>を1つ示せばよい。</span></li>
+      <li><span class="mark orange">◆</span><span>「二等辺三角形ならば底角は等しい」の逆「<b>底角が等しい三角形は二等辺三角形</b>」は、証明できる正しいことがら。</span></li>
+      <li><span class="mark pink">◆</span><span>証明には、頂点から底辺に<b>垂線</b>をひいて、合同な三角形を作るのがポイント。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+
+<script>
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(svgns, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function lineSeg(x1,y1,x2,y2, extra){ return el('line', Object.assign({x1,y1,x2,y2, stroke:'var(--chalk)', 'stroke-width':2.5, 'stroke-linecap':'round'}, extra||{})); }
+function polar(cx,cy,r,deg){ const a=deg*Math.PI/180; return [cx+r*Math.cos(a), cy+r*Math.sin(a)]; }
+function wedgePath(cx,cy,r,startDeg,endDeg){
+  const [x1,y1]=polar(cx,cy,r,startDeg), [x2,y2]=polar(cx,cy,r,endDeg);
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
+}
+function angleArc(svg, V, N1, N2, r, color){
+  const a1=Math.atan2(N1[1]-V[1],N1[0]-V[0])*180/Math.PI;
+  const a2=Math.atan2(N2[1]-V[1],N2[0]-V[0])*180/Math.PI;
+  let start=a1, diff=((a2-a1)%360+360)%360;
+  if(diff>180){ start=a2; diff=360-diff; }
+  const end=start+diff;
+  svg.appendChild(el('path',{d:wedgePath(V[0],V[1],r,start,end), fill:color, opacity:0.5, stroke:color, 'stroke-width':2}));
+}
+function tickMarks(svg, p1, p2, count, color){
+  const mx=(p1[0]+p2[0])/2, my=(p1[1]+p2[1])/2;
+  const dx=p2[0]-p1[0], dy=p2[1]-p1[1];
+  const len=Math.hypot(dx,dy);
+  const ux=dx/len, uy=dy/len, px=-uy, py=ux;
+  const spacing=8, tickLen=15;
+  const total=(count-1)*spacing;
+  for(let i=0;i<count;i++){
+    const off=-total/2+i*spacing;
+    const cx=mx+ux*off, cy=my+uy*off;
+    const x1=cx+px*tickLen/2, y1=cy+py*tickLen/2;
+    const x2=cx-px*tickLen/2, y2=cy-py*tickLen/2;
+    svg.appendChild(lineSeg(x1,y1,x2,y2,{stroke:color,'stroke-width':2.5}));
+  }
+}
+function vlabel(svg, p, dx, dy, text, color, size){
+  const t=el('text',{x:p[0]+dx,y:p[1]+dy,fill:color||'var(--chalk-dim)','font-size':size||18,'font-weight':700});
+  t.textContent=text;
+  svg.appendChild(t);
+}
+function rightAngleMark(svg, V, N1, N2, size){
+  const d1x=N1[0]-V[0], d1y=N1[1]-V[1]; const len1=Math.hypot(d1x,d1y);
+  const d2x=N2[0]-V[0], d2y=N2[1]-V[1]; const len2=Math.hypot(d2x,d2y);
+  const p1=[V[0]+d1x/len1*size, V[1]+d1y/len1*size];
+  const p2=[V[0]+d2x/len2*size, V[1]+d2y/len2*size];
+  const p3=[p1[0]+d2x/len2*size, p1[1]+d2y/len2*size];
+  svg.appendChild(el('path',{d:`M ${p1[0]} ${p1[1]} L ${p3[0]} ${p3[1]} L ${p2[0]} ${p2[1]}`, fill:'none', stroke:'var(--chalk)', 'stroke-width':2}));
+}
+
+// ---------- SLIDE 2: 反例(面積が等しい非合同な三角形) ----------
+function renderCounter(){
+  const svg = document.getElementById('svgCounter');
+  svg.innerHTML='';
+  // triangle 1: base 6, height 4 (scale 40px/unit)
+  const s=40;
+  const ox1=150, oy1=340;
+  const t1 = [[ox1,oy1], [ox1+6*s,oy1], [ox1+2*s,oy1-4*s]];
+  svg.appendChild(el('path',{d:`M ${t1[0][0]} ${t1[0][1]} L ${t1[1][0]} ${t1[1][1]} L ${t1[2][0]} ${t1[2][1]} Z`, fill:'var(--cyan)', opacity:0.15, stroke:'var(--cyan)', 'stroke-width':2.5}));
+  vlabel(svg,[ (t1[0][0]+t1[1][0])/2, t1[0][1]+34],0,0,'底辺6','var(--cyan)',24);
+  vlabel(svg,[t1[2][0]+18, (t1[2][1]+t1[0][1])/2],0,0,'高さ4','var(--cyan)',24);
+  vlabel(svg,[ (t1[0][0]+t1[1][0])/2-42, t1[0][1]+70],0,0,'面積＝12','var(--chalk)',26);
+
+  // triangle 2: base 8, height 3
+  const ox2=520, oy2=340;
+  const t2 = [[ox2,oy2], [ox2+8*s,oy2], [ox2+6*s,oy2-3*s]];
+  svg.appendChild(el('path',{d:`M ${t2[0][0]} ${t2[0][1]} L ${t2[1][0]} ${t2[1][1]} L ${t2[2][0]} ${t2[2][1]} Z`, fill:'var(--orange)', opacity:0.15, stroke:'var(--orange)', 'stroke-width':2.5}));
+  vlabel(svg,[ (t2[0][0]+t2[1][0])/2-28, t2[0][1]+34],0,0,'底辺8','var(--orange)',24);
+  vlabel(svg,[t2[2][0]+18, (t2[2][1]+t2[0][1])/2],0,0,'高さ3','var(--orange)',24);
+  vlabel(svg,[ (t2[0][0]+t2[1][0])/2-42, t2[0][1]+70],0,0,'面積＝12','var(--chalk)',26);
+}
+
+// ---------- shared geometry: triangle ABC with ∠B=∠C, D = foot of perpendicular from A ----------
+const A=[450,100], B=[220,450], C=[680,450], D=[450,450];
+function drawTri(svg){
+  const outline = `M ${A[0]} ${A[1]} L ${B[0]} ${B[1]} L ${C[0]} ${C[1]} Z`;
+  svg.appendChild(el('path',{d:outline, fill:'rgba(242,240,230,0.04)', stroke:'var(--chalk)', 'stroke-width':2.5, 'stroke-linejoin':'round'}));
+  svg.appendChild(lineSeg(A[0],A[1],D[0],D[1]));
+  [['A',A,-8,-16],['B',B,-24,10],['C',C,12,10],['D',D,-6,26]].forEach(([name,p,dx,dy])=>{
+    svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:5,fill:'var(--chalk)'}));
+    vlabel(svg,p,dx,dy,name,'var(--chalk)',19);
+  });
+}
+
+// ---------- SLIDE 3: 証明 ----------
+const stepSlider = document.getElementById('stepSlider');
+const stepPanel = document.getElementById('stepPanel');
+const stepCaption = document.getElementById('stepCaption');
+const stepCaptions = {
+  1: '結論に出てくる辺を確認する。',
+  2: '結論に出てくる辺をふくむ2つの三角形を作る（補助線をひく）。',
+  3: '問題文からわかっていること（仮定）を整理する。',
+  4: '図から分かること（作図でできる直角、共通な辺）を追加する。',
+  5: '2組の角と1組の辺がそろったので、使える合同条件を確認する。',
+  6: '合同な図形の性質を使って、結論を導く。'
+};
+function renderProof(){
+  const step = +stepSlider.value;
+  const svg = document.getElementById('svgProof');
+  svg.innerHTML='';
+  const outline = `M ${A[0]} ${A[1]} L ${B[0]} ${B[1]} L ${C[0]} ${C[1]} Z`;
+  svg.appendChild(el('path',{d:outline, fill:'rgba(242,240,230,0.04)', stroke:'var(--chalk)', 'stroke-width':2.5, 'stroke-linejoin':'round'}));
+  [['A',A,-8,-16],['B',B,-24,10],['C',C,12,10]].forEach(([name,p,dx,dy])=>{
+    svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:5,fill:'var(--chalk)'}));
+    vlabel(svg,p,dx,dy,name,'var(--chalk)',19);
+  });
+  if(step>=2){
+    svg.appendChild(lineSeg(A[0],A[1],D[0],D[1]));
+    svg.appendChild(el('circle',{cx:D[0],cy:D[1],r:5,fill:'var(--chalk)'}));
+    vlabel(svg,D,-6,26,'D','var(--chalk)',19);
+  }
+  if(step>=3){
+    angleArc(svg, B, A, C, 34, 'var(--cyan)');
+    angleArc(svg, C, A, B, 34, 'var(--cyan)');
+  }
+  if(step>=4){
+    rightAngleMark(svg, D, B, A, 22);
+    rightAngleMark(svg, D, C, A, 22);
+    tickMarks(svg, A, D, 2, 'var(--yellow)');
+  }
+  if(step>=6){
+    tickMarks(svg, A, B, 1, 'var(--orange)');
+    tickMarks(svg, A, C, 1, 'var(--orange)');
+  }
+
+  let html = '';
+  if(step===1){
+    html = `<div style="text-align:center; padding:1.2em .5em;">
+      <div style="color:var(--chalk-dim); font-size:.85em; margin-bottom:.5em;">これから証明したいこと</div>
+      <div style="font-size:1.6em; font-weight:900; color:var(--orange);">結論：AB＝AC</div>
+    </div>`;
+  } else {
+    html = `<div class="p-header">頂点AからBCに垂線をひき、辺BCとの交点をDとする。<br>△ABDと△ACDにおいて、</div>`;
+    if(step===2){
+      html += `<div class="p-row" style="color:var(--chalk-dim); font-size:.9em;">（ABは△ABDに、ACは△ACDにふくまれる → この2つの三角形に着目する）</div>`;
+    }
+    if(step>=3){
+      html += `<div class="p-row"><span class="p-label">仮定</span><span class="p-hyp">∠B＝∠C</span></div>`;
+    }
+    if(step>=4){
+      html += `<div class="p-row"><span class="p-label"></span><span class="p-extra">∠ADB＝∠ADC＝90°<br><span style="font-size:.78em; color:var(--chalk-dim);">（作図より）</span></span><span class="p-extra">AD＝AD<br><span style="font-size:.78em; color:var(--chalk-dim);">（共通な辺）</span></span></div>`;
+    }
+    if(step>=5){
+      html += `<div class="p-arrowrow"><span class="p-arrow">▼</span><span class="p-annot">◀ <b>三角形の合同条件</b><br>1組の辺とその両端の角が、それぞれ等しい</span></div>`;
+      html += `<div class="p-center">△ABD≡△ACD</div>`;
+    }
+    if(step>=6){
+      html += `<div class="p-arrowrow"><span class="p-arrow">▼</span><span class="p-annot">◀ <b>合同な図形の性質</b><br>対応する辺は等しい</span></div>`;
+      html += `<div class="p-row"><span class="p-label">結論</span><span class="p-con">AB＝AC</span></div>`;
+    }
+  }
+  stepPanel.innerHTML = html;
+  stepCaption.textContent = stepCaptions[step];
+  document.getElementById('stepCount').textContent = `${step} / 6`;
+  for(let i=1;i<=6;i++){
+    const t = document.getElementById('track'+i);
+    t.classList.toggle('now', i===step);
+    t.classList.toggle('done', i<step);
+  }
+  document.getElementById('stepPrev').disabled = (step<=1);
+  document.getElementById('stepNext').disabled = (step>=6);
+}
+stepSlider.addEventListener('input', renderProof);
+document.getElementById('stepPrev').addEventListener('click', ()=>{
+  stepSlider.value = Math.max(1, +stepSlider.value - 1);
+  renderProof();
+});
+document.getElementById('stepNext').addEventListener('click', ()=>{
+  stepSlider.value = Math.min(6, +stepSlider.value + 1);
+  renderProof();
+});
+
+// ---------- slide navigation ----------
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+let idx = 0;
+slides.forEach((_,i)=>{ const d = document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d); });
+function show(i){
+  idx = Math.max(0, Math.min(slides.length-1, i));
+  slides.forEach((s,j)=>s.classList.toggle('active', j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active', j===idx));
+  document.getElementById('cnt').textContent = idx+1;
+  if(idx===3) renderCounter();
+  if(idx===4) renderProof();
+}
+document.getElementById('prevBtn').addEventListener('click', ()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>show(idx+1));
+window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+
+show(0);
+</script>
+</body>
+</html>
