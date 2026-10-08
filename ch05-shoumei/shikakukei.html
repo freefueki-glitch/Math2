@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>いろいろな四角形の性質</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.25rem, 2.7vw, 1.95rem); margin: 0 0 .6em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(46vw,460px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .6em; min-width: 260px; max-width: 440px; font-size: clamp(.9rem,1.2vw,1.02rem); }
+.caption{ max-width: 780px; text-align:center; color: var(--chalk-dim); font-size: clamp(.86rem,1.25vw,1rem); line-height:1.7; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .75em 1.1em;
+  border-radius: 4px; max-width: 800px; text-align:left; font-size: clamp(.88rem,1.3vw,1.02rem); line-height:1.75; margin-bottom:.7em;
+}
+.cond-list{ display:flex; flex-direction:column; gap:.6em; width:100%; max-width:760px; }
+.cond-item{
+  display:flex; align-items:center; gap:.9em; padding:.7em 1.1em; border-radius:10px;
+  border:1.5px solid var(--rule); font-size: clamp(.9rem,1.4vw,1.05rem);
+}
+.cond-item.done{ border-color: var(--yellow); background: rgba(244,211,94,0.07); }
+.cond-item.empty{ opacity:.4; border-style:dashed; }
+.cond-num{
+  flex-shrink:0; width:1.8em; height:1.8em; border-radius:50%; background: var(--rule); color: var(--board);
+  font-weight:900; display:flex; align-items:center; justify-content:center; font-size:.95em;
+}
+.cond-item.done .cond-num{ background: var(--yellow); color:#20301f; }
+.tracker{ display:flex; gap:.5em; flex-wrap:wrap; justify-content:center; max-width:820px; margin-bottom:.7em; }
+.track-item{
+  display:flex; align-items:center; gap:.4em; font-size: clamp(.7rem,1.05vw,.82rem);
+  padding:.4em .7em; border-radius:999px; border:1.5px solid var(--rule); color:var(--chalk-dim);
+  opacity:.4; transition: all .2s ease;
+}
+.track-item .tnum{
+  width:1.4em; height:1.4em; border-radius:50%; background:var(--rule); color:var(--board);
+  font-weight:900; font-size:.85em; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.track-item.done{ opacity:.7; color:var(--chalk); border-color:var(--chalk-dim); }
+.track-item.now{ opacity:1; color:var(--yellow); border-color:var(--yellow); background:rgba(244,211,94,0.1); font-weight:700; }
+.track-item.now .tnum{ background:var(--yellow); color:#20301f; }
+.proof2{ width:100%; max-width:520px; display:flex; flex-direction:column; gap:.15em; font-size: clamp(.84rem,1.28vw,.98rem); }
+.proof2 .p-header{ font-weight:700; margin-bottom:.3em; }
+.proof2 .p-row{ display:flex; align-items:center; gap:.6em; flex-wrap:wrap; }
+.proof2 .p-label{ flex-shrink:0; width:3.4em; font-weight:700; color:var(--chalk-dim); }
+.proof2 .p-hyp{ background: rgba(126,200,227,0.18); border:1.5px solid var(--cyan); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-extra{ background: rgba(242,240,230,0.04); border:1.5px solid var(--rule); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-con{ background: rgba(244,151,108,0.18); border:1.5px solid var(--orange); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-arrowrow{ display:flex; align-items:center; gap:.8em; margin:.25em 0 .25em 1.7em; }
+.proof2 .p-arrow{ color:var(--yellow); font-size:1.2em; flex-shrink:0; }
+.proof2 .p-annot{ color:var(--chalk-dim); font-size:.85em; line-height:1.5; }
+.proof2 .p-annot b{ color:var(--yellow); }
+.proof2 .p-center{ margin-left:1.7em; font-weight:900; color:var(--chalk); }
+.step-btn{
+  background:none; border:1.5px solid var(--chalk-dim); color:var(--chalk);
+  padding:.4em 1em; border-radius:999px; font-size:.9em; cursor:pointer;
+  font-family:'Zen Kaku Gothic New',sans-serif; transition: all .2s ease;
+}
+.step-btn:hover{ border-color:var(--yellow); color:var(--yellow); }
+.step-btn:disabled{ opacity:.35; cursor:default; }
+.step-btn:disabled:hover{ border-color:var(--chalk-dim); color:var(--chalk); }
+.stepctrl{ display:flex; align-items:center; justify-content:center; gap:1em; margin-bottom:.5em; }
+.stepctrl .cnt{ font-weight:900; color:var(--yellow); font-size:1.1em; min-width:3.4em; text-align:center; }
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.45em; flex-wrap:wrap; justify-content:center; max-width:70vw; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; z-index:10; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; z-index:10; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; z-index:10; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+
+.blank{display:inline-block;min-width:3.2em;border:1.5px solid var(--yellow);border-radius:6px;padding:.05em .6em;margin:0 .1em;cursor:pointer;color:transparent;background:rgba(244,211,94,.07);user-select:none;transition:all .15s}
+.blank.revealed{color:var(--orange);font-weight:700;background:none;border-color:rgba(244,151,108,.55)}
+.defcol{flex:1;min-width:0;text-align:center}
+.defcol .nm{font-size:1.25em;font-weight:900;color:var(--yellow);margin-bottom:.2em}
+.defcol .df{font-size:1.02em;line-height:1.7;padding:.5em .6em;border:1.5px solid var(--chalk-dim);border-radius:10px;margin-top:.3em}
+.defrow{display:flex;gap:1.2em;width:100%;max-width:1000px;margin:0 auto}
+.infobox{border:1.5px solid var(--chalk-dim);border-radius:10px;padding:.7em 1em;font-size:1.05em;line-height:1.9;min-width:250px}
+.infobox .ok{color:var(--yellow);font-weight:900}
+.tabs{display:flex;gap:.6em;justify-content:center;margin:.3em 0 .5em}
+.tabs button{font-family:inherit;font-weight:700;font-size:.95em;padding:.4em 1.2em;border-radius:999px;border:1.5px solid var(--chalk-dim);background:transparent;color:var(--chalk);cursor:pointer}
+.tabs button.on{border-color:var(--yellow);color:var(--yellow);background:rgba(244,211,94,.1)}
+.morph{display:flex;gap:1.5em;align-items:center;justify-content:center;flex-wrap:wrap}
+.sl{display:flex;align-items:center;gap:.8em;justify-content:center;margin:.3em 0}
+.sl input{width:min(60vw,420px);accent-color:var(--yellow)}
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 図形の性質と証明</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 6</div>
+
+  <section class="slide active">
+    <h2 class="disp">① 長方形・ひし形・正方形の定義</h2>
+    <div class="caption" style="margin-top:0">枠をクリックすると答えが表示されます</div>
+    <div class="defrow">
+      <div class="defcol"><div class="nm">長方形</div><svg id="d1" viewBox="0 0 300 220" style="width:100%"></svg>
+        <div class="df"><span class="blank">4つの角</span>がすべて等しい四角形</div></div>
+      <div class="defcol"><div class="nm">ひし形</div><svg id="d2" viewBox="0 0 300 220" style="width:100%"></svg>
+        <div class="df"><span class="blank">4つの辺</span>がすべて等しい四角形</div></div>
+      <div class="defcol"><div class="nm">正方形</div><svg id="d3" viewBox="0 0 300 220" style="width:100%"></svg>
+        <div class="df"><span class="blank">4つの角</span>がすべて等しく、<span class="blank">4つの辺</span>がすべて等しい四角形</div></div>
+    </div>
+    <div class="caption">平行四辺形の定義：2組の向かいあう辺が、それぞれ平行な四角形</div>
+  </section>
+
+  <section class="slide">
+    <h2 class="disp">② 平行四辺形 → 長方形</h2>
+    <div class="definition-box" style="font-size:.95em;">平行四辺形に<b>どんな条件</b>を付け加えると、長方形になるだろうか。スライダーで∠Aを変えてみよう。</div>
+    <div class="morph">
+      <svg id="m1" viewBox="0 0 640 460" style="width:min(48vw,560px)"></svg>
+      <div class="infobox" id="i1"></div>
+    </div>
+    <div class="sl">∠A <input type="range" id="r1" min="60" max="120" step="1" value="65"></div>
+  </section>
+
+  <section class="slide">
+    <h2 class="disp">③ 平行四辺形 → ひし形</h2>
+    <div class="definition-box" style="font-size:.95em;">平行四辺形に<b>どんな条件</b>を付け加えると、ひし形になるだろうか。スライダーでADの長さを変えてみよう。</div>
+    <div class="morph">
+      <svg id="m2" viewBox="0 0 640 460" style="width:min(48vw,560px)"></svg>
+      <div class="infobox" id="i2"></div>
+    </div>
+    <div class="sl">AD <input type="range" id="r2" min="100" max="350" step="1" value="150"></div>
+  </section>
+
+  <section class="slide">
+    <h2 class="disp">④ 長方形・ひし形 → 正方形</h2>
+    <div class="tabs"><button id="tabR" class="on">長方形から</button><button id="tabH">ひし形から</button></div>
+    <div class="morph">
+      <svg id="m3" viewBox="0 0 640 460" style="width:min(48vw,560px)"></svg>
+      <div class="infobox" id="i3"></div>
+    </div>
+    <div class="sl"><span id="r3lab">AD</span> <input type="range" id="r3" min="120" max="250" step="1" value="150"></div>
+  </section>
+
+  <section class="slide">
+    <h2 class="disp">⑤ まとめ：平行四辺形から正方形まで</h2>
+    <svg id="sum" viewBox="0 0 1000 500" style="width:min(92vw,980px)"></svg>
+    <div class="stepctrl">
+      <button id="s5Prev" class="step-btn">‹ 前へ</button>
+      <span id="s5Count" class="cnt">1 / 4</span>
+      <button id="s5Next" class="step-btn">次へ ›</button>
+    </div>
+    <input type="range" id="s5Slider" min="1" max="4" step="1" value="1" style="width:min(60vw,420px); accent-color:var(--yellow);">
+    <div class="caption" id="s5Caption"></div>
+  </section>
+
+  <section class="slide">
+    <h2 class="disp">⑥ まとめ：対角線の条件</h2>
+    <svg id="sum2" viewBox="0 0 1000 500" style="width:min(92vw,980px)"></svg>
+    <div class="stepctrl">
+      <button id="s6Prev" class="step-btn">‹ 前へ</button>
+      <span id="s6Count" class="cnt">1 / 4</span>
+      <button id="s6Next" class="step-btn">次へ ›</button>
+    </div>
+    <input type="range" id="s6Slider" min="1" max="4" step="1" value="1" style="width:min(60vw,420px); accent-color:var(--yellow);">
+    <div class="caption" id="s6Caption"></div>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">›</button>
+  </div>
+</div>
+<script>
+
+
+
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(svgns, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function lineSeg(x1,y1,x2,y2, extra){ return el('line', Object.assign({x1,y1,x2,y2, stroke:'var(--chalk)', 'stroke-width':2.5, 'stroke-linecap':'round'}, extra||{})); }
+function polar(cx,cy,r,deg){ const a=deg*Math.PI/180; return [cx+r*Math.cos(a), cy+r*Math.sin(a)]; }
+function wedgePath(cx,cy,r,startDeg,endDeg){
+  const [x1,y1]=polar(cx,cy,r,startDeg), [x2,y2]=polar(cx,cy,r,endDeg);
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
+}
+function angleArc(svg, V, N1, N2, r, color){
+  const a1=Math.atan2(N1[1]-V[1],N1[0]-V[0])*180/Math.PI;
+  const a2=Math.atan2(N2[1]-V[1],N2[0]-V[0])*180/Math.PI;
+  let start=a1, diff=((a2-a1)%360+360)%360;
+  if(diff>180){ start=a2; diff=360-diff; }
+  const end=start+diff;
+  svg.appendChild(el('path',{d:wedgePath(V[0],V[1],r,start,end), fill:color, opacity:0.5, stroke:color, 'stroke-width':2}));
+}
+function tickMarks(svg, p1, p2, count, color){
+  const mx=(p1[0]+p2[0])/2, my=(p1[1]+p2[1])/2;
+  const dx=p2[0]-p1[0], dy=p2[1]-p1[1];
+  const len=Math.hypot(dx,dy);
+  const ux=dx/len, uy=dy/len, px=-uy, py=ux;
+  const spacing=8, tickLen=15;
+  const total=(count-1)*spacing;
+  for(let i=0;i<count;i++){
+    const off=-total/2+i*spacing;
+    const cx=mx+ux*off, cy=my+uy*off;
+    const x1=cx+px*tickLen/2, y1=cy+py*tickLen/2;
+    const x2=cx-px*tickLen/2, y2=cy-py*tickLen/2;
+    svg.appendChild(lineSeg(x1,y1,x2,y2,{stroke:color,'stroke-width':2.5}));
+  }
+}
+function vlabel(svg, p, dx, dy, text, color, size){
+  const t=el('text',{x:p[0]+dx,y:p[1]+dy,fill:color||'var(--chalk-dim)','font-size':size||18,'font-weight':700});
+  t.textContent=text;
+  svg.appendChild(t);
+}
+
+
+
+
+// ---------- shapes ----------
+const Y='var(--yellow)', CH='var(--chalk)', CY='var(--cyan)', OR='var(--orange)', PK='var(--pink)';
+function poly(svg,pts,fill,stroke,w){
+  svg.appendChild(el('path',{d:'M '+pts.map(p=>p.join(' ')).join(' L ')+' Z', fill:fill||'rgba(242,240,230,0.05)', stroke:stroke||CH, 'stroke-width':w||3, 'stroke-linejoin':'round'}));
+}
+function names(svg,pts,size,off){
+  const cx=pts.reduce((s,p)=>s+p[0],0)/4, cy=pts.reduce((s,p)=>s+p[1],0)/4;
+  ['A','B','C','D'].forEach((n,i)=>{
+    const p=pts[i], dx=p[0]-cx, dy=p[1]-cy, L=Math.hypot(dx,dy)||1;
+    const o=off||24;
+    vlabel(svg,p,dx/L*o-8,dy/L*o+8,n,CH,size||20);
+    svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:4,fill:CH}));
+  });
+}
+function rightMark(svg,v,p1,p2,s){
+  s=s||16;
+  const u1=[p1[0]-v[0],p1[1]-v[1]], u2=[p2[0]-v[0],p2[1]-v[1]];
+  const l1=Math.hypot(...u1), l2=Math.hypot(...u2);
+  const a=[v[0]+u1[0]/l1*s, v[1]+u1[1]/l1*s], b=[v[0]+u2[0]/l2*s, v[1]+u2[1]/l2*s];
+  const c=[a[0]+u2[0]/l2*s, a[1]+u2[1]/l2*s];
+  svg.appendChild(el('path',{d:`M ${a[0]} ${a[1]} L ${c[0]} ${c[1]} L ${b[0]} ${b[1]}`, fill:'none', stroke:Y, 'stroke-width':2.5}));
+}
+function txt(svg,x,y,s,color,size,anchor){
+  const t=el('text',{x,y,fill:color||CH,'font-size':size||20,'font-weight':700,'text-anchor':anchor||'start'});
+  t.textContent=s; svg.appendChild(t);
+}
+function dash(svg,P,Q,color){
+  svg.appendChild(el('line',{x1:P[0],y1:P[1],x2:Q[0],y2:Q[1],stroke:color,'stroke-width':2.5,'stroke-dasharray':'8 6'}));
+}
+const quads={
+  rect:(cx,cy,w,h)=>[[cx-w/2,cy+h/2],[cx+w/2,cy+h/2],[cx+w/2,cy-h/2],[cx-w/2,cy-h/2]],
+  rhomb:(cx,cy,b,off,h)=>[[cx-b/2-off/2,cy+h/2],[cx+b/2-off/2,cy+h/2],[cx+b/2+off/2,cy-h/2],[cx-b/2+off/2,cy-h/2]],
+  para:(cx,cy,b,off,h)=>[[cx-b/2-off/2,cy+h/2],[cx+b/2-off/2,cy+h/2],[cx+b/2+off/2,cy-h/2],[cx-b/2+off/2,cy-h/2]]
+};
+function rightAll(svg,q){ for(let i=0;i<4;i++) rightMark(svg,q[i],q[(i+1)%4],q[(i+3)%4],14); }
+function ticksAll(svg,q,n,color){ for(let i=0;i<4;i++) tickMarks(svg,q[i],q[(i+1)%4],n,color||CY); }
+
+// ---------- slide1 ----------
+function drawDefs(){
+  const s1=document.getElementById('d1'); s1.innerHTML='';
+  let q=quads.rect(150,110,200,120); poly(s1,q); rightAll(s1,q); names(s1,q,18,22);
+  const s2=document.getElementById('d2'); s2.innerHTML='';
+  q=quads.rhomb(150,110,150,60,128); poly(s2,q); ticksAll(s2,q,1); names(s2,q,18,22);
+  const s3=document.getElementById('d3'); s3.innerHTML='';
+  q=quads.rect(150,110,140,140); poly(s3,q); rightAll(s3,q); ticksAll(s3,q,1); names(s3,q,18,22);
+}
+document.querySelectorAll('.blank').forEach(b=>b.addEventListener('click',()=>b.classList.toggle('revealed')));
+
+// ---------- slide2: parallelogram -> rectangle ----------
+function render2(){
+  const th=+document.getElementById('r1').value, r=th*Math.PI/180, c=Math.cos(r), s=Math.sin(r);
+  const A=[200,400],B=[500,400],D=[200+200*c,400-200*s],C=[500+200*c,400-200*s];
+  const svg=document.getElementById('m1'); svg.innerHTML='';
+  poly(svg,[A,B,C,D]); dash(svg,A,C,CY); dash(svg,B,D,PK); names(svg,[A,B,C,D],22,26);
+  svg.appendChild(el('path',{d:`M ${A[0]+44} ${A[1]} A 44 44 0 0 0 ${A[0]+44*c} ${A[1]-44*s}`,fill:'none',stroke:Y,'stroke-width':3}));
+  if(th===90) rightMark(svg,A,B,D,20);
+  const ac=Math.hypot(C[0]-A[0],C[1]-A[1])/50, bd=Math.hypot(D[0]-B[0],D[1]-B[1])/50;
+  const eq=Math.abs(ac-bd)<0.05;
+  document.getElementById('i1').innerHTML=
+   `∠A ＝ <b>${th}°</b>　∠B ＝ ${180-th}°<br><span style="color:${'#7fd6e8'}">AC ＝ ${ac.toFixed(1)}</span>　<span style="color:#f4a0c0">BD ＝ ${bd.toFixed(1)}</span><br>`+
+   (th===90?`<span class="ok">1つの角が直角 → 長方形！</span><br>対角線も等しい（AC＝BD）`
+          :th>90?`平行四辺形のまま（∠Aが鈍角）<br>（対角線の長さはちがう）`
+          :`平行四辺形のまま（∠Aが鋭角）<br>（対角線の長さはちがう）`)+
+   `<hr style="border-color:var(--rule)"><b>平行四辺形 ＋ 1つの角が直角</b><br>または <b>対角線が等しい</b> → 長方形`;
+}
+document.getElementById('r1').addEventListener('input',render2);
+
+// ---------- slide3: parallelogram -> rhombus ----------
+function render3(){
+  const sl=document.getElementById('r2'); if(Math.abs(+sl.value-250)<=4) sl.value=250; const L=+sl.value, r=70*Math.PI/180, c=Math.cos(r), s=Math.sin(r);
+  const A=[110,410],B=[360,410],D=[110+L*c,410-L*s],C=[360+L*c,410-L*s];
+  const svg=document.getElementById('m2'); svg.innerHTML='';
+  poly(svg,[A,B,C,D]); dash(svg,A,C,CY); dash(svg,B,D,PK); names(svg,[A,B,C,D],22,26);
+  const O=[(A[0]+C[0])/2,(A[1]+C[1])/2];
+  const u=[C[0]-A[0],C[1]-A[1]], v=[D[0]-B[0],D[1]-B[1]];
+  let ang=Math.acos(Math.abs(u[0]*v[0]+u[1]*v[1])/(Math.hypot(...u)*Math.hypot(...v)))*180/Math.PI;
+  const eq=(L===250);
+  if(eq){ ticksAll(svg,[A,B,C,D],1,CY); rightMark(svg,O,C,B,18); }
+  document.getElementById('i2').innerHTML=
+   `AB ＝ 5.0　AD ＝ <b>${(L/50).toFixed(1)}</b><br>対角線のなす角 ＝ <b>${Math.round(ang)}°</b><br>`+
+   (eq?`<span class="ok">となりあう辺が等しい → ひし形！</span><br>対角線は垂直に交わる`
+      :`平行四辺形のまま<br>（AD${L<250?'＜':'＞'}AB：となりあう辺の長さがちがう）`)+
+   `<hr style="border-color:var(--rule)"><b>平行四辺形 ＋ となりあう辺が等しい</b><br>または <b>対角線が垂直に交わる</b> → ひし形`;
+}
+document.getElementById('r2').addEventListener('input',render3);
+
+// ---------- slide4: -> square ----------
+let mode='R';
+function setMode(m){
+  mode=m;
+  document.getElementById('tabR').classList.toggle('on',m==='R');
+  document.getElementById('tabH').classList.toggle('on',m==='H');
+  const r=document.getElementById('r3');
+  if(m==='R'){ r.min=120; r.max=250; r.value=150; document.getElementById('r3lab').textContent='AD'; }
+  else { r.min=60; r.max=90; r.value=70; document.getElementById('r3lab').textContent='∠A'; }
+  render4();
+}
+function render4(){
+  const sl3=document.getElementById('r3'); if(mode==='R' && Math.abs(+sl3.value-250)<=4) sl3.value=250; const v=+sl3.value, svg=document.getElementById('m3'); svg.innerHTML='';
+  let q, html;
+  if(mode==='R'){
+    q=[[130,400],[380,400],[380,400-v],[130,400-v]];
+    poly(svg,q); rightAll(svg,q); names(svg,q,22,26);
+    tickMarks(svg,q[0],q[1],1,CY); tickMarks(svg,q[2],q[3],1,CY);
+    const sq=(v===250);
+    if(sq){ tickMarks(svg,q[1],q[2],1,CY); tickMarks(svg,q[3],q[0],1,CY); }
+    html=`長方形（4つの角が直角）<br>AB ＝ 5.0　AD ＝ <b>${(v/50).toFixed(1)}</b><br>`+
+     (sq?`<span class="ok">となりあう辺が等しい → 正方形！</span>`:`まだ長方形<br>（となりあう辺がちがう）`)+
+     `<hr style="border-color:var(--rule)"><b>長方形 ＋ となりあう辺が等しい</b><br>または <b>対角線が垂直に交わる</b> → 正方形`;
+  } else {
+    const r=v*Math.PI/180, c=Math.cos(r), s=Math.sin(r), L=230;
+    const A=[130,410],B=[360,410],D=[130+L*c,410-L*s],C=[360+L*c,410-L*s];
+    q=[A,B,C,D]; poly(svg,q); ticksAll(svg,q,1,CY); names(svg,q,22,26);
+    svg.appendChild(el('path',{d:`M ${A[0]+44} ${A[1]} A 44 44 0 0 0 ${A[0]+44*c} ${A[1]-44*s}`,fill:'none',stroke:Y,'stroke-width':3}));
+    if(v===90) rightMark(svg,A,B,D,20);
+    html=`ひし形（4つの辺が等しい）<br>∠A ＝ <b>${v}°</b><br>`+
+     (v===90?`<span class="ok">1つの角が直角 → 正方形！</span>`:`まだひし形<br>（角が直角ではない）`)+
+     `<hr style="border-color:var(--rule)"><b>ひし形 ＋ 1つの角が直角</b><br>または <b>対角線が等しい</b> → 正方形`;
+  }
+  document.getElementById('i3').innerHTML=html;
+}
+document.getElementById('r3').addEventListener('input',render4);
+document.getElementById('tabR').addEventListener('click',()=>setMode('R'));
+document.getElementById('tabH').addEventListener('click',()=>setMode('H'));
+
+// ---------- slide5: summary ----------
+const cap5={1:'平行四辺形：2組の向かいあう辺が、それぞれ平行な四角形。',
+ 2:'平行四辺形 ＋ 1つの角が直角 → 長方形（4つの角がすべて等しい）。',
+ 3:'平行四辺形 ＋ となりあう辺が等しい → ひし形（4つの辺がすべて等しい）。',
+ 4:'長方形 ＋ となりあう辺が等しい ／ ひし形 ＋ 1つの角が直角 → 正方形。'};
+function arrow(svg,x1,y1,x2,y2,label,lx,ly){
+  const a=Math.atan2(y2-y1,x2-x1), h=14;
+  svg.appendChild(el('line',{x1,y1,x2:x2-Math.cos(a)*h*.6,y2:y2-Math.sin(a)*h*.6,stroke:Y,'stroke-width':3.5}));
+  svg.appendChild(el('polygon',{points:`${x2},${y2} ${x2-Math.cos(a-.4)*h*1.3},${y2-Math.sin(a-.4)*h*1.3} ${x2-Math.cos(a+.4)*h*1.3},${y2-Math.sin(a+.4)*h*1.3}`,fill:Y}));
+  txt(svg,lx,ly,label,Y,19,'middle');
+}
+function card(svg,type,cx,cy,name,def,diag){
+  let q;
+  if(type==='para') q=quads.para(cx,cy-12,140,56,100);
+  if(type==='rect') q=quads.rect(cx,cy-12,150,100);
+  if(type==='rhomb') q=quads.rhomb(cx,cy-12,108,40,100);
+  if(type==='sq') q=quads.rect(cx,cy-12,104,104);
+  poly(svg,q,'rgba(242,240,230,0.06)',CH,3.5);
+  if(diag){
+    const O=[(q[0][0]+q[2][0])/2,(q[0][1]+q[2][1])/2];
+    dash(svg,q[0],q[2],CY); dash(svg,q[1],q[3],PK);
+    svg.appendChild(el('circle',{cx:O[0],cy:O[1],r:4,fill:Y}));
+    const n=(type==='para'||type==='rhomb')?[1,type==='para'?2:1]:[1,1];
+    tickMarks(svg,q[0],O,n[0],CY); tickMarks(svg,O,q[2],n[0],CY);
+    tickMarks(svg,q[1],O,n[1],PK); tickMarks(svg,O,q[3],n[1],PK);
+    if(type==='rhomb'||type==='sq') rightMark(svg,O,q[2],q[1],12);
+    txt(svg,cx,cy+78,name,Y,26,'middle');
+    def.forEach((d,i)=>txt(svg,cx,cy+104+i*22,d,CH,17,'middle'));
+    return;
+  }
+  if(type==='rect'||type==='sq') rightAll(svg,q);
+  if(type==='rhomb'||type==='sq') ticksAll(svg,q,1,CY);
+  if(type==='para'){ tickMarks(svg,q[0],q[1],1,CY); tickMarks(svg,q[2],q[3],1,CY); tickMarks(svg,q[1],q[2],2,PK); tickMarks(svg,q[3],q[0],2,PK); }
+  txt(svg,cx,cy+78,name,Y,26,'middle');
+  def.forEach((d,i)=>txt(svg,cx,cy+104+i*22,d,CH,17,'middle'));
+}
+function render5(){
+  const st=+document.getElementById('s5Slider').value, svg=document.getElementById('sum'); svg.innerHTML='';
+  card(svg,'para',120,230,'平行四辺形',['2組の向かいあう辺が','それぞれ平行']);
+  if(st>=2){ arrow(svg,215,195,395,125,'1つの角が直角',300,138); card(svg,'rect',500,95,'長方形',['4つの角がすべて等しい']); }
+  if(st>=3){ arrow(svg,215,285,395,365,'となりあう辺が等しい',290,375); card(svg,'rhomb',500,365,'ひし形',['4つの辺がすべて等しい']); }
+  if(st>=4){
+    arrow(svg,620,125,785,205,'となりあう辺が等しい',725,112);
+    arrow(svg,620,370,785,290,'1つの角が直角',700,398);
+    card(svg,'sq',885,230,'正方形',['4つの角がすべて等しく','4つの辺がすべて等しい']);
+  }
+  document.getElementById('s5Caption').textContent=cap5[st];
+  document.getElementById('s5Count').textContent=st+' / 4';
+  document.getElementById('s5Prev').disabled=(st<=1);
+  document.getElementById('s5Next').disabled=(st>=4);
+}
+const sl5=document.getElementById('s5Slider');
+sl5.addEventListener('input',render5);
+document.getElementById('s5Prev').addEventListener('click',()=>{sl5.value=Math.max(1,+sl5.value-1);render5();});
+document.getElementById('s5Next').addEventListener('click',()=>{sl5.value=Math.min(4,+sl5.value+1);render5();});
+
+// ---------- slide6: diagonals ----------
+const cap6={1:'平行四辺形：対角線はそれぞれの中点で交わる。',
+ 2:'平行四辺形 ＋ 対角線の長さが等しい → 長方形。',
+ 3:'平行四辺形 ＋ 対角線が垂直に交わる → ひし形。',
+ 4:'対角線が等しく、垂直に交わる → 正方形。（長方形＋垂直／ひし形＋等しい）'};
+function render6(){
+  const st=+document.getElementById('s6Slider').value, svg=document.getElementById('sum2'); svg.innerHTML='';
+  card(svg,'para',120,230,'平行四辺形',['対角線が、それぞれの','中点で交わる'],true);
+  if(st>=2){ arrow(svg,215,195,395,125,'対角線が等しい',300,138); card(svg,'rect',500,95,'長方形',['対角線の長さが等しい'],true); }
+  if(st>=3){ arrow(svg,215,285,395,365,'対角線が垂直に交わる',290,375); card(svg,'rhomb',500,365,'ひし形',['対角線が垂直に交わる'],true); }
+  if(st>=4){
+    arrow(svg,620,125,785,205,'対角線が垂直に交わる',725,112);
+    arrow(svg,620,370,785,290,'対角線が等しい',700,398);
+    card(svg,'sq',885,230,'正方形',['対角線が等しく','垂直に交わる'],true);
+  }
+  document.getElementById('s6Caption').textContent=cap6[st];
+  document.getElementById('s6Count').textContent=st+' / 4';
+  document.getElementById('s6Prev').disabled=(st<=1);
+  document.getElementById('s6Next').disabled=(st>=4);
+}
+const sl6=document.getElementById('s6Slider');
+sl6.addEventListener('input',render6);
+document.getElementById('s6Prev').addEventListener('click',()=>{sl6.value=Math.max(1,+sl6.value-1);render6();});
+document.getElementById('s6Next').addEventListener('click',()=>{sl6.value=Math.min(4,+sl6.value+1);render6();});
+
+// ---------- navigation ----------
+const slides=document.querySelectorAll('.slide'), dotsWrap=document.getElementById('dots');
+let idx=0;
+slides.forEach((_,i)=>{const d=document.createElement('span'); if(i===0) d.classList.add('active'); dotsWrap.appendChild(d);});
+function show(i){
+  idx=Math.max(0,Math.min(slides.length-1,i));
+  slides.forEach((s,j)=>s.classList.toggle('active',j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active',j===idx));
+  document.getElementById('cnt').textContent=idx+1;
+  if(idx===0) drawDefs();
+  if(idx===1) render2();
+  if(idx===2) render3();
+  if(idx===3) setMode(mode);
+  if(idx===4) render5();
+  if(idx===5) render6();
+}
+document.getElementById('prevBtn').addEventListener('click',()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click',()=>show(idx+1));
+window.addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT') return; if(e.key==='ArrowRight') show(idx+1); if(e.key==='ArrowLeft') show(idx-1); });
+show(0);
+</script>
+</body>
+</html>
