@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>いろいろな確率を求めよう１</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.4rem, 3vw, 2.2rem); margin: 0 0 .7em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(46vw,460px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .6em; min-width: 260px; max-width: 400px; font-size: clamp(.9rem,1.2vw,1.02rem); }
+.caption{ max-width: 700px; text-align:center; color: var(--chalk-dim); font-size: clamp(.88rem,1.3vw,1.02rem); line-height:1.75; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 780px; text-align:left; font-size: clamp(.9rem,1.4vw,1.06rem); line-height:1.8; margin-bottom:.8em;
+}
+.proof2{ width:100%; max-width:520px; display:flex; flex-direction:column; gap:.15em; font-size: clamp(.86rem,1.3vw,1rem); }
+.proof2 .p-header{ font-weight:700; margin-bottom:.3em; }
+.proof2 .p-row{ display:flex; align-items:center; gap:.6em; flex-wrap:wrap; }
+.proof2 .p-label{ flex-shrink:0; width:3.4em; font-weight:700; color:var(--chalk-dim); }
+.proof2 .p-hyp{ background: rgba(126,200,227,0.18); border:1.5px solid var(--cyan); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-extra{ background: rgba(242,240,230,0.04); border:1.5px solid var(--rule); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-con{ background: rgba(244,151,108,0.18); border:1.5px solid var(--orange); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-arrowrow{ display:flex; align-items:center; gap:.8em; margin:.25em 0 .25em 1.7em; }
+.proof2 .p-arrow{ color:var(--yellow); font-size:1.2em; flex-shrink:0; }
+.proof2 .p-annot{ color:var(--chalk-dim); font-size:.85em; line-height:1.5; }
+.proof2 .p-annot b{ color:var(--yellow); }
+.proof2 .p-center{ margin-left:1.7em; font-weight:900; color:var(--chalk); }
+.vocab-row{ display:flex; gap:1em; flex-wrap:wrap; justify-content:center; max-width:780px; margin-bottom:.6em; }
+.vocab-card{ flex:1 1 200px; border-radius:10px; padding:.7em 1em; text-align:center; font-size: clamp(.85rem,1.3vw,1rem); }
+.vocab-card .vname{ font-weight:900; margin-bottom:.2em; }
+.vocab-card.va{ border:1.5px solid var(--yellow); color:var(--yellow); }
+.vocab-card.vb{ border:1.5px solid var(--cyan); color:var(--cyan); }
+.vocab-card.vc{ border:1.5px solid var(--pink); color:var(--pink); }
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.55em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(.95rem,1.6vw,1.15rem); line-height:1.55; padding: .35em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; z-index:10; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; z-index:10; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; z-index:10; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+
+
+.cap-top{ font-size:clamp(.95rem,1.6vw,1.2rem); margin:0 0 .6em; text-align:center; flex-shrink:0; line-height:1.7; }
+.cap-top b{ color:var(--yellow); }
+.bag{ border:2px solid var(--chalk-dim); border-radius:18px 18px 40px 40px; padding:.9em 1.1em; display:flex; flex-wrap:wrap; gap:.6em; justify-content:center; background:rgba(242,240,230,.04); position:relative; max-width:360px; }
+.bag .lbl{ position:absolute; top:-.85em; left:50%; transform:translateX(-50%); background:var(--board); padding:0 .6em; font-size:.85rem; color:var(--chalk-dim); white-space:nowrap; }
+.ball{ width:clamp(42px,6vw,62px); height:clamp(42px,6vw,62px); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:1.1rem; transition:all .3s; box-shadow:inset -5px -6px 10px rgba(0,0,0,.25); color:transparent; }
+.ball.red{ background:radial-gradient(circle at 35% 30%, #ff9a9a, #d8403f 60%); }
+.ball.white{ background:radial-gradient(circle at 35% 30%, #fff, #cfd3cf 70%); }
+.ball.num{ color:#222; }
+.ball.red.num{ color:#fff; }
+.ball.dim{ opacity:.25; }
+.ball.pick{ outline:3px solid var(--yellow); outline-offset:3px; }
+.chartwrap{ width:min(46vw,560px); min-width:300px; }
+.sm .ball{ width:36px; height:36px; }
+.two{ display:flex; gap:2.4vw; align-items:flex-start; justify-content:center; flex-wrap:wrap; width:100%; max-width:1050px; }
+.steps{ display:flex; flex-direction:column; gap:.6em; min-width:300px; max-width:520px; flex:1 1 320px; }
+.step{ border:1.5px solid var(--rule); border-radius:10px; padding:.6em .9em; font-size:clamp(.92rem,1.4vw,1.08rem); line-height:1.7; display:none; }
+.step.show{ display:block; }
+.step b.k{ color:var(--yellow); }
+.frac{ display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 .25em; line-height:1.25; font-family:'Yomogi',sans-serif; }
+.frac span:first-child{ border-bottom:2px solid currentColor; padding:0 .3em; }
+.btn{ background:none; border:1.5px solid var(--yellow); color:var(--yellow); border-radius:999px; padding:.4em 1.2em; font-family:inherit; font-size:.98rem; cursor:pointer; }
+.btn:hover{ background:rgba(244,211,94,.1); }
+.btn.on{ border-color:var(--yellow); color:var(--yellow); background:rgba(244,211,94,.12); }
+.btn.sub{ border-color:var(--chalk-dim); color:var(--chalk); }
+.formula{ border:2px solid var(--yellow); border-radius:12px; padding:.8em 1.4em; background:rgba(244,211,94,.07); font-size:clamp(1rem,1.9vw,1.4rem); text-align:center; line-height:1.9; margin:.4em 0 .8em; }
+.qrow{ display:flex; align-items:center; gap:.8em; flex-wrap:wrap; border:1.5px solid var(--rule); border-radius:10px; padding:.6em .9em; width:100%; max-width:780px; font-size:clamp(.95rem,1.6vw,1.15rem); }
+.qrow .ans{ margin-left:auto; color:var(--yellow); font-weight:900; visibility:hidden; }
+.qrow .ans.show{ visibility:visible; }
+.qlist{ display:flex; flex-direction:column; gap:.55em; width:100%; align-items:center; }
+.bad{ border-color:var(--pink)!important; }
+.tally{ display:grid; grid-template-columns:repeat(3,1fr); gap:.4em; text-align:center; width:100%; margin-top:.5em; }
+.tally div{ border:1.5px solid var(--rule); border-radius:8px; padding:.3em; font-size:.82rem; color:var(--chalk-dim); }
+.tally div b{ display:block; color:var(--chalk); font-size:1.4rem; font-family:'Yomogi',sans-serif; font-weight:400; }
+.tally div.rel b{ color:var(--yellow); }
+
+.treewrap{ width:min(92vw,820px); }
+.treewrap svg{ width:100%; height:auto; }
+#tree5{ max-height:44vh; }
+#tree3{ max-height:42vh; }
+.tbl{ border-collapse:collapse; font-size:clamp(.8rem,1.5vw,1.1rem); text-align:center; }
+.tbl th,.tbl td{ border:1.5px solid var(--rule); width:2.5em; height:2.2em; }
+.tbl th{ color:var(--chalk-dim); font-weight:500; background:rgba(242,240,230,.05); }
+.tbl td.hit{ background:rgba(244,211,94,.25); color:var(--yellow); font-weight:900; border-color:var(--yellow); }
+.tbl td.x{ color:var(--pink); background:rgba(239,157,176,.1); }
+.tbl td.dup{ color:var(--chalk-dim); text-decoration:line-through; background:rgba(239,157,176,.08); }
+.badge-ans{ display:inline-block; margin-top:.3em; color:var(--yellow); font-weight:900; font-size:1.15em; }
+table.sum{ border-collapse:collapse; width:100%; max-width:960px; font-size:clamp(.74rem,1.12vw,.9rem); }
+table.sum th,table.sum td{ border:1.5px solid var(--rule); padding:.3em .6em; text-align:left; vertical-align:top; line-height:1.6; }
+table.sum th{ background:rgba(242,240,230,.05); color:var(--yellow); font-weight:700; white-space:nowrap; }
+table.sum thead th{ color:var(--chalk-dim); font-weight:500; }
+.wrong{ border-left:3px solid var(--pink); }
+.wrong .w{ color:var(--pink); font-weight:700; }
+.tips{ display:grid; grid-template-columns:1fr 1fr; gap:.5em .8em; width:100%; max-width:960px; margin-top:.5em; }
+.tips div{ border:1.5px solid var(--rule); border-radius:10px; padding:.3em .7em; font-size:clamp(.74rem,1.12vw,.9rem); line-height:1.6; }
+.tips div b{ color:var(--yellow); }
+@media (max-width:700px){ .tips{ grid-template-columns:1fr; } }
+
+.bars{ width:min(46vw,520px); min-width:300px; }
+.bars svg{ width:100%; height:auto; }
+#sim6 svg{ max-height:33vh; }
+#sim4 svg{ max-height:44vh; }
+.qbtns{ display:flex; gap:.5em; flex-wrap:wrap; justify-content:center; margin-top:.5em; }
+.ansbox{ min-height:3.2em; text-align:center; font-size:clamp(.95rem,1.6vw,1.2rem); line-height:1.8; margin-top:.5em; }
+.ansbox .p{ color:var(--yellow); font-weight:900; }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 場合の数と確率</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 8</div>
+
+  <!-- 1 -->
+  <section class="slide active">
+    <h2 class="disp">４時間目　いろいろな確率を求めよう１</h2>
+    <div class="definition-box" style="border-left-color:var(--cyan);"><b style="color:var(--cyan);">これまでに学んだこと</b><br>・確率 ＝ <b>ことがらAの起こる場合の数 ÷ 起こりうるすべての場合の数</b>（どの場合も同様に確からしいとき）<br>・場合の数は、<b>樹形図や表</b>で、もれや重なりなく数える</div>
+    <div class="cap-top"><b>問題</b>　10円硬貨と100円硬貨を同時に投げるとき、<br><b>2枚とも表が出る確率</b>はいくつだろう？</div>
+    <div class="caption">「表表」「表裏」「裏裏」の3通りだから <span class="frac"><span>1</span><span>3</span></span> …？　本当にそうかな？<br>今日は、<b>硬貨が2枚・3枚</b>の場合を使って、いろいろな確率を求めよう。</div>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide">
+    <h2 class="disp">確率を求める手順</h2>
+    <ul class="points">
+      <li><span class="mark yellow">①</span><span><b>起こりうるすべての場合</b>を、樹形図や表で書き出し、<b>全部で何通りか</b>を求める。</span></li>
+      <li><span class="mark cyan">②</span><span>どの場合も<b>同様に確からしい</b>か、確かめる。</span></li>
+      <li><span class="mark pink">③</span><span>求めたいことがらが<b>起こる場合は何通りか</b>を数える。</span></li>
+      <li><span class="mark orange">④</span><span>確率 ＝ <span class="frac"><span>③の場合の数</span><span>①の場合の数</span></span>　で計算する。</span></li>
+    </ul>
+    <div class="definition-box" style="margin-top:.9em;border-left-color:var(--yellow);"><b style="color:var(--yellow);">大切なポイント</b>　硬貨やさいころは、同じように見えても、<b>1つ1つを区別</b>して考える。<br>（10円と100円、A と B、1枚目と2枚目 など）</div>
+  </section>
+
+  <!-- 3 two coins -->
+  <section class="slide" id="s3">
+    <h2 class="disp">例１　硬貨が2枚のとき</h2>
+    <div class="cap-top">10円硬貨と100円硬貨を同時に投げる。（表を○、裏を×と書く）</div>
+    <div class="treewrap"><svg id="tree3" viewBox="0 0 760 200" style="max-height:30vh;"></svg></div>
+    <div class="qbtns">
+      <button class="btn" data-q="0">(1) 2枚とも表</button>
+      <button class="btn" data-q="1">(2) 1枚が表で、1枚が裏</button>
+      <button class="btn" data-q="2">(3) 少なくとも1枚は表</button>
+    </div>
+    <div class="ansbox" id="ans3">全部で <b class="p">4通り</b>（2×2）。どの場合も同様に確からしい。上のボタンで確率を求めよう。</div>
+  </section>
+
+  <!-- 4 mistake + sim -->
+  <section class="slide" id="s4">
+    <h2 class="disp">「表裏」と「裏表」は別の場合</h2>
+    <div class="two">
+      <div class="steps" style="max-width:460px;">
+        <div class="step show" style="border-color:var(--pink);"><b style="color:var(--pink);">よくあるまちがい</b><br>硬貨を区別しないで、「表表」「表裏」「裏裏」の3通りとして、<br>「2枚とも表」を <span class="frac"><span>1</span><span>3</span></span> とする。</div>
+        <div class="step show"><b class="k">正しい考え方</b><br>10円が表・100円が裏の場合と、10円が裏・100円が表の場合は<b>別の場合</b>。<br>→ 「表裏」と「裏表」を区別して<b>4通り</b>。<br>「表と裏が1枚ずつ」は <b>2通り</b>なので、<span class="frac"><span>2</span><span>4</span></span> ＝ <span class="frac"><span>1</span><span>2</span></span>。</div>
+        <div class="step show" style="color:var(--chalk-dim);">右の実験で、<b>3つの結果が同じくらい出る</b>わけではないことを確かめよう。</div>
+      </div>
+      <div class="bars" id="sim4"></div>
+    </div>
+  </section>
+
+  <!-- 5 three coins -->
+  <section class="slide" id="s5">
+    <h2 class="disp">例２　硬貨が3枚のとき</h2>
+    <div class="cap-top">10円、50円、100円の硬貨を同時に投げる。（表を○、裏を×と書く）</div>
+    <div class="treewrap"><svg id="tree5" viewBox="0 0 760 340" style="max-height:34vh;"></svg></div>
+    <div class="qbtns">
+      <button class="btn" data-q="0">(1) 3枚とも表</button>
+      <button class="btn" data-q="1">(2) 表が2枚、裏が1枚</button>
+      <button class="btn" data-q="2">(3) 少なくとも1枚は裏</button>
+    </div>
+    <div class="ansbox" id="ans5">全部で <b class="p">8通り</b>（2×2×2）。上のボタンで確率を求めよう。</div>
+  </section>
+
+  <!-- 6 sim three -->
+  <section class="slide" id="s6">
+    <h2 class="disp">3枚の実験でたしかめよう</h2>
+    <div class="cap-top">硬貨を3枚投げて、<b>表が何枚出るか</b>を何度も調べる。<br>計算で求めた確率（点線）に、相対度数は近づくだろうか？</div>
+    <div class="bars" id="sim6" style="width:min(90vw,640px);"></div>
+    <div class="caption">表が0枚…1通り　1枚…3通り　2枚…3通り　3枚…1通り　（全部で8通り）<br>だから、確率は <span class="frac"><span>1</span><span>8</span></span>、<span class="frac"><span>3</span><span>8</span></span>、<span class="frac"><span>3</span><span>8</span></span>、<span class="frac"><span>1</span><span>8</span></span>。</div>
+  </section>
+
+  <!-- 7 practice -->
+  <section class="slide">
+    <h2 class="disp">練習</h2>
+    <div class="qlist">
+      <div class="qrow" style="display:block;"><b>(1)</b>　硬貨を2枚投げるとき、<b>2枚とも裏</b>になる確率は？<br><button class="btn sub" onclick="rev(this)">答えを見る</button><span class="ans2" style="display:none;"><b style="color:var(--yellow)">1/4</b>　（全部で4通りのうち、裏裏の1通り）</span></div>
+      <div class="qrow" style="display:block;"><b>(2)</b>　硬貨を2枚投げるとき、<b>少なくとも1枚は裏</b>になる確率は？<br><button class="btn sub" onclick="rev(this)">答えを見る</button><span class="ans2" style="display:none;"><b style="color:var(--yellow)">3/4</b>　（裏表・表裏・裏裏の3通り。または、全部から「2枚とも表」の1通りを除く）</span></div>
+      <div class="qrow" style="display:block;"><b>(3)</b>　硬貨を3枚投げるとき、<b>表が1枚だけ</b>出る確率は？<br><button class="btn sub" onclick="rev(this)">答えを見る</button><span class="ans2" style="display:none;"><b style="color:var(--yellow)">3/8</b>　（表裏裏・裏表裏・裏裏表の3通り）</span></div>
+      <div class="qrow" style="display:block;"><b>(4)</b>　硬貨を3枚投げるとき、<b>少なくとも1枚は表</b>が出る確率は？<br><button class="btn sub" onclick="rev(this)">答えを見る</button><span class="ans2" style="display:none;"><b style="color:var(--yellow)">7/8</b>　（全部で8通りのうち、「3枚とも裏」の1通りだけ除く）</span></div>
+    </div>
+  </section>
+
+  <!-- 8 summary -->
+  <section class="slide">
+    <h2 class="disp">まとめ</h2>
+    <ul class="points">
+      <li><span class="mark yellow">①</span><span>確率は、<b>樹形図や表</b>ですべての場合を書き出し、<b>起こる場合の数 ÷ 全部の場合の数</b>で求める。</span></li>
+      <li><span class="mark cyan">②</span><span>硬貨は<b>1枚ずつ区別</b>して考える。「表裏」と「裏表」は別の場合。<br>　2枚なら <b style="color:var(--yellow)">4通り</b>、3枚なら <b style="color:var(--yellow)">8通り</b>。</span></li>
+      <li><span class="mark pink">③</span><span>「表と裏が1枚ずつ」の確率は <span class="frac"><span>2</span><span>4</span></span> ＝ <span class="frac"><span>1</span><span>2</span></span>。「3通りだから <span class="frac"><span>1</span><span>3</span></span>」は<b>まちがい</b>。</span></li>
+      <li><span class="mark orange">④</span><span>「少なくとも1枚は〜」は、<b>起こらない場合</b>（全部が逆の場合）を見つけて全部から引くと、数え方が楽になる。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">◀</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">▶</button>
+  </div>
+</div>
+
+<script>
+const svgns="http://www.w3.org/2000/svg";
+function el(t,a){const e=document.createElementNS(svgns,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+function rev(b){b.style.display='none';b.parentNode.querySelector('.ans2').style.display='inline';}
+function fr(a,b){return '<span class="frac"><span>'+a+'</span><span>'+b+'</span></span>';}
+// ---------- generic tree: node={l:label,c:[children]}, drawn left to right
+function drawTree(svg,root,opt){
+  svg.innerHTML='';
+  const leaves=[];
+  (function walk(n,d,path){n.d=d;n.path=path.concat([n.l]);if(!n.c||!n.c.length){leaves.push(n);}else n.c.forEach(c=>walk(c,d+1,n.path));})(root,0,[]);
+  const depth=Math.max(...leaves.map(l=>l.d));
+  const W=760,rowH=opt.rowH,H=leaves.length*rowH+20,x0=50,colW=(W-x0-150)/depth;
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  leaves.forEach((l,i)=>l.y=10+rowH*(i+.5));
+  (function ys(n){if(n.c&&n.c.length){n.c.forEach(ys);n.y=(n.c[0].y+n.c[n.c.length-1].y)/2;}})(root);
+  const X=d=>x0+colW*d;
+  // headers
+  (function edges(n){(n.c||[]).forEach(c=>{svg.appendChild(el('line',{x1:X(n.d),y1:n.y,x2:X(c.d),y2:c.y,stroke:'rgba(242,240,230,.45)','stroke-width':2}));edges(c);});})(root);
+  (function nodes(n){
+    if(n.d>0){const g=el('g',{});g.appendChild(el('circle',{cx:X(n.d),cy:n.y,r:15,fill:'#16241b',stroke:'#f2f0e6','stroke-width':1.6}));
+      const t=el('text',{x:X(n.d),y:n.y+5.5,'text-anchor':'middle',fill:'#f2f0e6','font-size':16,'font-weight':700});t.textContent=n.l;g.appendChild(t);svg.appendChild(g);}
+    else svg.appendChild(el('circle',{cx:X(0),cy:n.y,r:5,fill:'#f2f0e6'}));
+    (n.c||[]).forEach(nodes);})(root);
+  leaves.forEach((l,i)=>{
+    const hit=opt.hit&&opt.hit(l);
+    const tx=X(depth)+30;
+    if(opt.numbered){const b=el('circle',{cx:tx+6,cy:l.y,r:12,fill:'none',stroke:'#7ec8e3','stroke-width':1.5});svg.appendChild(b);
+      const t=el('text',{x:tx+6,y:l.y+5,'text-anchor':'middle',fill:'#7ec8e3','font-size':14,'font-weight':700});t.textContent=i+1;svg.appendChild(t);}
+    const t=el('text',{x:tx+28,y:l.y+5.5,fill:hit?'#f4d35e':'#f2f0e6','font-size':17,'font-weight':hit?900:400});
+    t.textContent=opt.res(l)+(hit?'  ◀':'');svg.appendChild(t);
+    if(hit)svg.appendChild(el('rect',{x:tx+20,y:l.y-13,width:opt.hitW||130,height:26,rx:6,fill:'rgba(244,211,94,.15)',stroke:'#f4d35e'}));
+  });
+}
+function mk(l,c){return {l,c};}
+
+
+// ---------- coin trees
+function coinTree(n){const mkT=d=>d===0?undefined:['○','×'].map(l=>mk(l,d>1?mkT(d-1):undefined));return mk('',mkT(n));}
+function nOmote(l){return l.path.slice(1).filter(x=>x==='○').length;}
+const QS={
+ 3:[{f:l=>nOmote(l)===2,txt:'2枚とも表（○○）：<b class="p">1通り</b>　→　確率 '+fr(1,4)},
+    {f:l=>nOmote(l)===1,txt:'1枚が表で1枚が裏（○× と ×○）：<b class="p">2通り</b>　→　確率 '+fr(2,4)+' ＝ '+fr(1,2)},
+    {f:l=>nOmote(l)>=1,txt:'少なくとも1枚は表（××以外）：<b class="p">3通り</b>　→　確率 '+fr(3,4)}],
+ 5:[{f:l=>nOmote(l)===3,txt:'3枚とも表（○○○）：<b class="p">1通り</b>　→　確率 '+fr(1,8)},
+    {f:l=>nOmote(l)===2,txt:'表が2枚、裏が1枚（○○× ○×○ ×○○）：<b class="p">3通り</b>　→　確率 '+fr(3,8)},
+    {f:l=>nOmote(l)<=2,txt:'少なくとも1枚は裏（○○○以外）：<b class="p">7通り</b>　→　確率 '+fr(7,8)}]};
+function setupCoin(id,svgId,n,ansId,rowH){
+  let q=-1;
+  function r(){const f=q>=0?QS[id][q].f:null;
+    drawTree(document.getElementById(svgId),coinTree(n),{rowH,numbered:true,res:l=>l.path.slice(1).join(''),hit:f,hitW:n===2?80:90});
+    document.getElementById(ansId).innerHTML=q>=0?QS[id][q].txt:(n===2?'全部で <b class="p">4通り</b>（2×2）。どの場合も同様に確からしい。上のボタンで確率を求めよう。':'全部で <b class="p">8通り</b>（2×2×2）。どの場合も同様に確からしい。上のボタンで確率を求めよう。');}
+  document.querySelectorAll('#s'+(n===2?3:5)+' .qbtns button').forEach(b=>b.onclick=()=>{q=+b.dataset.q;r();});
+  r();
+}
+setupCoin(3,'tree3',2,'ans3',40);
+setupCoin(5,'tree5',3,'ans5',36);
+
+// ---------- coin simulators (bars)
+function makeSim(boxId,n,cats,theory){
+  const box=document.getElementById(boxId);
+  const S={n:0,c:cats.map(()=>0)};let auto=null;
+  box.innerHTML='<svg viewBox="0 0 560 280"></svg><div style="display:flex;gap:.4em;flex-wrap:wrap;justify-content:center;margin-top:.4em;"><button class="btn sub" data-s="1">+1回</button><button class="btn sub" data-s="10">+10回</button><button class="btn sub" data-s="100">+100回</button><button class="btn sub" data-s="1000">+1000回</button><button class="btn sub" data-a="1">▶ 自動</button><button class="btn sub" data-s="0">リセット</button></div><div class="ansbox" style="min-height:1.6em;font-size:.95rem;color:var(--chalk-dim)"></div>';
+  const svg=box.querySelector('svg'),info=box.querySelector('.ansbox'),autoB=box.querySelector('[data-a]');
+  function draw(){
+    svg.innerHTML='';const L=50,R=10,T=14,B=56,W=560,H=280,pw=W-L-R,ph=H-T-B,k=cats.length,bw=pw/k*0.55;
+    const ymax=0.6,Y=v=>T+ph*(1-Math.min(v,ymax)/ymax);
+    [0,.2,.4,.6].forEach(v=>{svg.appendChild(el('line',{x1:L,x2:L+pw,y1:Y(v),y2:Y(v),stroke:'rgba(242,240,230,.15)'}));const t=el('text',{x:L-6,y:Y(v)+5,'text-anchor':'end',fill:'#a9b8a4','font-size':13});t.textContent=v;svg.appendChild(t);});
+    cats.forEach((c,i)=>{
+      const cx=L+pw/k*(i+.5),v=S.n?S.c[i]/S.n:0;
+      svg.appendChild(el('rect',{x:cx-bw/2,y:Y(v),width:bw,height:T+ph-Y(v),fill:'#f4d35e',opacity:.85,rx:3}));
+      svg.appendChild(el('line',{x1:cx-bw/2-8,x2:cx+bw/2+8,y1:Y(theory[i]),y2:Y(theory[i]),stroke:'#7ec8e3','stroke-width':2.5,'stroke-dasharray':'6 4'}));
+      let t=el('text',{x:cx,y:T+ph+20,'text-anchor':'middle',fill:'#f2f0e6','font-size':14,'font-weight':700});t.textContent=c;svg.appendChild(t);
+      t=el('text',{x:cx,y:T+ph+40,'text-anchor':'middle',fill:'#f4d35e','font-size':14});t.textContent=S.n?(S.c[i]/S.n).toFixed(3):'—';svg.appendChild(t);
+      if(S.n){t=el('text',{x:cx,y:Y(v)-6,'text-anchor':'middle',fill:'#f2f0e6','font-size':12});t.textContent=S.c[i]+'回';svg.appendChild(t);}
+    });
+    svg.appendChild(el('line',{x1:L,x2:L+pw,y1:T+ph,y2:T+ph,stroke:'#a9b8a4'}));
+    info.innerHTML='投げた回数：<b style="color:var(--chalk)">'+S.n+'</b>　／　棒＝相対度数、<span style="color:#7ec8e3">点線＝計算で求めた確率</span>';
+  }
+  function add(m){for(let j=0;j<m;j++){let t=0,o=0;for(let a=0;a<n;a++){if(Math.random()<.5)o++;}S.n++;S.c[cats.f(o)]++;}draw();}
+  function stop(){if(auto){clearInterval(auto);auto=null;}autoB.textContent='▶ 自動';autoB.classList.remove('on');}
+  box.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{const s=+b.dataset.s;if(s===0){stop();S.n=0;S.c=cats.map(()=>0);draw();}else add(s);});
+  autoB.onclick=()=>{if(auto){stop();return;}autoB.textContent='■ 停止';autoB.classList.add('on');auto=setInterval(()=>{add(3);if(S.n>=10000)stop();},60);};
+  box.stop=stop;draw();return box;
+}
+const c2=['表表','表裏が1枚ずつ','裏裏'];c2.f=o=>o===2?0:(o===1?1:2);
+const c3=['表0枚','表1枚','表2枚','表3枚'];c3.f=o=>o;
+const sims=[makeSim('sim4',2,c2,[.25,.5,.25]),makeSim('sim6',3,c3,[.125,.375,.375,.125])];
+
+const slides=[...document.querySelectorAll('.slide')];let idx=0;
+const dotsWrap=document.getElementById('dots');
+slides.forEach((s,i)=>{const d=document.createElement('span');if(i===0)d.classList.add('active');dotsWrap.appendChild(d);});
+function show(i){
+  idx=Math.max(0,Math.min(slides.length-1,i));sims.forEach(s=>s.stop());
+  slides.forEach((s,j)=>s.classList.toggle('active',j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active',j===idx));
+  document.getElementById('cnt').textContent=idx+1;
+}
+document.getElementById('prevBtn').addEventListener('click',()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click',()=>show(idx+1));
+window.addEventListener('keydown',e=>{if(e.key==='ArrowRight')show(idx+1);if(e.key==='ArrowLeft')show(idx-1);});
+show(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>いろいろな確率を求めよう２</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.4rem, 3vw, 2.2rem); margin: 0 0 .7em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(46vw,460px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .6em; min-width: 260px; max-width: 400px; font-size: clamp(.9rem,1.2vw,1.02rem); }
+.caption{ max-width: 700px; text-align:center; color: var(--chalk-dim); font-size: clamp(.88rem,1.3vw,1.02rem); line-height:1.75; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 780px; text-align:left; font-size: clamp(.9rem,1.4vw,1.06rem); line-height:1.8; margin-bottom:.8em;
+}
+.proof2{ width:100%; max-width:520px; display:flex; flex-direction:column; gap:.15em; font-size: clamp(.86rem,1.3vw,1rem); }
+.proof2 .p-header{ font-weight:700; margin-bottom:.3em; }
+.proof2 .p-row{ display:flex; align-items:center; gap:.6em; flex-wrap:wrap; }
+.proof2 .p-label{ flex-shrink:0; width:3.4em; font-weight:700; color:var(--chalk-dim); }
+.proof2 .p-hyp{ background: rgba(126,200,227,0.18); border:1.5px solid var(--cyan); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-extra{ background: rgba(242,240,230,0.04); border:1.5px solid var(--rule); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-con{ background: rgba(244,151,108,0.18); border:1.5px solid var(--orange); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-arrowrow{ display:flex; align-items:center; gap:.8em; margin:.25em 0 .25em 1.7em; }
+.proof2 .p-arrow{ color:var(--yellow); font-size:1.2em; flex-shrink:0; }
+.proof2 .p-annot{ color:var(--chalk-dim); font-size:.85em; line-height:1.5; }
+.proof2 .p-annot b{ color:var(--yellow); }
+.proof2 .p-center{ margin-left:1.7em; font-weight:900; color:var(--chalk); }
+.vocab-row{ display:flex; gap:1em; flex-wrap:wrap; justify-content:center; max-width:780px; margin-bottom:.6em; }
+.vocab-card{ flex:1 1 200px; border-radius:10px; padding:.7em 1em; text-align:center; font-size: clamp(.85rem,1.3vw,1rem); }
+.vocab-card .vname{ font-weight:900; margin-bottom:.2em; }
+.vocab-card.va{ border:1.5px solid var(--yellow); color:var(--yellow); }
+.vocab-card.vb{ border:1.5px solid var(--cyan); color:var(--cyan); }
+.vocab-card.vc{ border:1.5px solid var(--pink); color:var(--pink); }
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.55em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(.95rem,1.6vw,1.15rem); line-height:1.55; padding: .35em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; z-index:10; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; z-index:10; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; z-index:10; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+
+
+.cap-top{ font-size:clamp(.95rem,1.6vw,1.2rem); margin:0 0 .6em; text-align:center; flex-shrink:0; line-height:1.7; }
+.cap-top b{ color:var(--yellow); }
+.bag{ border:2px solid var(--chalk-dim); border-radius:18px 18px 40px 40px; padding:.9em 1.1em; display:flex; flex-wrap:wrap; gap:.6em; justify-content:center; background:rgba(242,240,230,.04); position:relative; max-width:360px; }
+.bag .lbl{ position:absolute; top:-.85em; left:50%; transform:translateX(-50%); background:var(--board); padding:0 .6em; font-size:.85rem; color:var(--chalk-dim); white-space:nowrap; }
+.ball{ width:clamp(42px,6vw,62px); height:clamp(42px,6vw,62px); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:1.1rem; transition:all .3s; box-shadow:inset -5px -6px 10px rgba(0,0,0,.25); color:transparent; }
+.ball.red{ background:radial-gradient(circle at 35% 30%, #ff9a9a, #d8403f 60%); }
+.ball.white{ background:radial-gradient(circle at 35% 30%, #fff, #cfd3cf 70%); }
+.ball.num{ color:#222; }
+.ball.red.num{ color:#fff; }
+.ball.dim{ opacity:.25; }
+.ball.pick{ outline:3px solid var(--yellow); outline-offset:3px; }
+.chartwrap{ width:min(46vw,560px); min-width:300px; }
+.sm .ball{ width:36px; height:36px; }
+.two{ display:flex; gap:2.4vw; align-items:flex-start; justify-content:center; flex-wrap:wrap; width:100%; max-width:1050px; }
+.steps{ display:flex; flex-direction:column; gap:.6em; min-width:300px; max-width:520px; flex:1 1 320px; }
+.step{ border:1.5px solid var(--rule); border-radius:10px; padding:.6em .9em; font-size:clamp(.92rem,1.4vw,1.08rem); line-height:1.7; display:none; }
+.step.show{ display:block; }
+.step b.k{ color:var(--yellow); }
+.frac{ display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 .25em; line-height:1.25; font-family:'Yomogi',sans-serif; }
+.frac span:first-child{ border-bottom:2px solid currentColor; padding:0 .3em; }
+.btn{ background:none; border:1.5px solid var(--yellow); color:var(--yellow); border-radius:999px; padding:.4em 1.2em; font-family:inherit; font-size:.98rem; cursor:pointer; }
+.btn:hover{ background:rgba(244,211,94,.1); }
+.btn.on{ border-color:var(--yellow); color:var(--yellow); background:rgba(244,211,94,.12); }
+.btn.sub{ border-color:var(--chalk-dim); color:var(--chalk); }
+.formula{ border:2px solid var(--yellow); border-radius:12px; padding:.8em 1.4em; background:rgba(244,211,94,.07); font-size:clamp(1rem,1.9vw,1.4rem); text-align:center; line-height:1.9; margin:.4em 0 .8em; }
+.qrow{ display:flex; align-items:center; gap:.8em; flex-wrap:wrap; border:1.5px solid var(--rule); border-radius:10px; padding:.6em .9em; width:100%; max-width:780px; font-size:clamp(.95rem,1.6vw,1.15rem); }
+.qrow .ans{ margin-left:auto; color:var(--yellow); font-weight:900; visibility:hidden; }
+.qrow .ans.show{ visibility:visible; }
+.qlist{ display:flex; flex-direction:column; gap:.55em; width:100%; align-items:center; }
+.bad{ border-color:var(--pink)!important; }
+.tally{ display:grid; grid-template-columns:repeat(3,1fr); gap:.4em; text-align:center; width:100%; margin-top:.5em; }
+.tally div{ border:1.5px solid var(--rule); border-radius:8px; padding:.3em; font-size:.82rem; color:var(--chalk-dim); }
+.tally div b{ display:block; color:var(--chalk); font-size:1.4rem; font-family:'Yomogi',sans-serif; font-weight:400; }
+.tally div.rel b{ color:var(--yellow); }
+
+.treewrap{ width:min(92vw,820px); }
+.treewrap svg{ width:100%; height:auto; }
+#tree5{ max-height:44vh; }
+#tree3{ max-height:42vh; }
+.tbl{ border-collapse:collapse; font-size:clamp(.8rem,1.5vw,1.1rem); text-align:center; }
+.tbl th,.tbl td{ border:1.5px solid var(--rule); width:2.5em; height:2.2em; }
+.tbl th{ color:var(--chalk-dim); font-weight:500; background:rgba(242,240,230,.05); }
+.tbl td.hit{ background:rgba(244,211,94,.25); color:var(--yellow); font-weight:900; border-color:var(--yellow); }
+.tbl td.x{ color:var(--pink); background:rgba(239,157,176,.1); }
+.tbl td.dup{ color:var(--chalk-dim); text-decoration:line-through; background:rgba(239,157,176,.08); }
+.badge-ans{ display:inline-block; margin-top:.3em; color:var(--yellow); font-weight:900; font-size:1.15em; }
+table.sum{ border-collapse:collapse; width:100%; max-width:960px; font-size:clamp(.74rem,1.12vw,.9rem); }
+table.sum th,table.sum td{ border:1.5px solid var(--rule); padding:.3em .6em; text-align:left; vertical-align:top; line-height:1.6; }
+table.sum th{ background:rgba(242,240,230,.05); color:var(--yellow); font-weight:700; white-space:nowrap; }
+table.sum thead th{ color:var(--chalk-dim); font-weight:500; }
+.wrong{ border-left:3px solid var(--pink); }
+.wrong .w{ color:var(--pink); font-weight:700; }
+.tips{ display:grid; grid-template-columns:1fr 1fr; gap:.5em .8em; width:100%; max-width:960px; margin-top:.5em; }
+.tips div{ border:1.5px solid var(--rule); border-radius:10px; padding:.3em .7em; font-size:clamp(.74rem,1.12vw,.9rem); line-height:1.6; }
+.tips div b{ color:var(--yellow); }
+@media (max-width:700px){ .tips{ grid-template-columns:1fr; } }
+
+.bars{ width:min(46vw,520px); min-width:300px; }
+.bars svg{ width:100%; height:auto; }
+#sim6 svg{ max-height:33vh; }
+#sim4 svg{ max-height:44vh; }
+.qbtns{ display:flex; gap:.5em; flex-wrap:wrap; justify-content:center; margin-top:.5em; }
+.ansbox{ min-height:3.2em; text-align:center; font-size:clamp(.95rem,1.6vw,1.2rem); line-height:1.8; margin-top:.5em; }
+.ansbox .p{ color:var(--yellow); font-weight:900; }
+
+#s5 .step{ padding:.35em .7em; line-height:1.55; }
+#s5 .tbl.big th,#s5 .tbl.big td{ height:2em; }
+.tbl td.small{ font-size:.78em; }
+.tbl.big th,.tbl.big td{ width:3.1em; height:2.3em; }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 場合の数と確率</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 7</div>
+
+  <!-- 1 -->
+  <section class="slide active">
+    <h2 class="disp">５時間目　いろいろな確率を求めよう２</h2>
+    <div class="definition-box" style="border-left-color:var(--cyan);"><b style="color:var(--cyan);">前の時間</b>：硬貨2枚・3枚の確率を、<b>樹形図</b>で全部の場合を書き出して求めた。<br>確率 ＝ <b>起こる場合の数 ÷ 全部の場合の数</b>　（どの場合も同様に確からしいとき）</div>
+    <div class="cap-top"><b>今日の問題</b><br>①　大小2個のさいころを同時に投げるとき、<b>目の和が7</b>になる確率は？<br>②　数字を書いた5枚のカードから<b>2枚ひく</b>とき、<b>2枚とも奇数</b>になる確率は？</div>
+    <div class="caption">場合の数が多くなってきたね。<b>表</b>を使うと、もれや重なりなく数えられる。<br>今日は、さいころとカードで、いろいろな確率を求めよう。</div>
+  </section>
+
+  <!-- 2 dice -->
+  <section class="slide" id="s2">
+    <h2 class="disp">例１　さいころを2個投げるとき</h2>
+    <div class="cap-top">大小2個のさいころを同時に投げる。（表の中は <b>大の目,小の目</b>）</div>
+    <div class="two">
+      <table class="tbl big" id="tbl2"></table>
+      <div class="steps" style="max-width:430px;">
+        <div class="step show"><b class="k">全部の場合</b>：6 × 6 ＝ <b>36通り</b><br>大と小は<b>区別</b>する。(1,2) と (2,1) は別の場合。どれも同様に確からしい。</div>
+        <div class="qbtns" style="justify-content:flex-start;">
+          <button class="btn" data-q="0">(1) 目の和が7</button>
+          <button class="btn" data-q="1">(2) 目の和が10以上</button>
+          <button class="btn" data-q="2">(3) 同じ目が出る</button>
+          <button class="btn" data-q="3">(4) 目の積が奇数</button>
+          <button class="btn" data-q="4">(5) 少なくとも1個は1の目</button>
+        </div>
+        <div class="step show" id="ans2" style="text-align:center;">上のボタンで、条件に合うマスに色がつく。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 sim -->
+  <section class="slide" id="s3">
+    <h2 class="disp">さいころ2個：大小を区別するわけ</h2>
+    <div class="two">
+      <div class="steps" style="max-width:450px;">
+        <div class="step show" style="border-color:var(--pink);"><b style="color:var(--pink);">よくあるまちがい</b><br>「目の和」で数えて、2、3、4、…、12 の<b>11通り</b>として、和が7になる確率を <span class="frac"><span>1</span><span>11</span></span> とする。</div>
+        <div class="step show"><b class="k">正しい考え方</b><br>和が7になるのは (1,6)(2,5)(3,4)(4,3)(5,2)(6,1) の<b>6通り</b>、和が2になるのは (1,1) の<b>1通り</b>だけ。<br>和の出方は、<b>同様に確からしくない</b>。<br>→ 大小を区別した<b>36通り</b>で数える。</div>
+        <div class="step show" style="color:var(--chalk-dim);">右の実験：和が7が一番出やすく、2や12は出にくい。点線は計算で求めた確率（<span class="frac"><span>6</span><span>36</span></span> など）。</div>
+      </div>
+      <div class="bars" id="sim3" style="width:min(48vw,560px);"></div>
+    </div>
+  </section>
+
+  <!-- 4 cards -->
+  <section class="slide" id="s4">
+    <h2 class="disp">例２　カードから2枚ひくとき</h2>
+    <div class="cap-top">①②③④⑤の5枚のカードから、<b>同時に2枚</b>ひく。（表の中は ひいた2枚の組）</div>
+    <div class="two">
+      <div>
+        <table class="tbl big" id="tbl4"></table>
+        <div style="text-align:center;font-size:.8rem;color:var(--chalk-dim);margin-top:.4em;">×…同じカードは2枚ひけない　取り消し線…「AB」と「BA」の重なり</div>
+      </div>
+      <div class="steps" style="max-width:430px;">
+        <div class="step show"><b class="k">全部の場合</b>：<b>10通り</b><br>「同時にひく」ので、(①,②) と (②,①) は<b>同じ組</b>。重なりをのぞいて数える。</div>
+        <div class="qbtns" style="justify-content:flex-start;">
+          <button class="btn" data-q="0">(1) 2枚とも奇数</button>
+          <button class="btn" data-q="1">(2) 数の和が6</button>
+          <button class="btn" data-q="2">(3) 少なくとも1枚は偶数</button>
+          <button class="btn" data-q="3">(4) ③をひく</button>
+        </div>
+        <div class="step show" id="ans4" style="text-align:center;">上のボタンで、条件に合う組に色がつく。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 order -->
+  <section class="slide" id="s5">
+    <h2 class="disp">順序を考えても、考えなくてもいい？</h2>
+    <div class="cap-top"><b>問</b>　5枚のカードから2枚ひくとき、<b>2枚とも奇数</b>になる確率は？<br>（①③⑤が奇数）　数え方を2とおりでくらべよう。</div>
+    <div class="two">
+      <div><table class="tbl big" id="tbl5"></table></div>
+      <div class="steps" style="max-width:450px;font-size:.9em;">
+        <div class="qbtns" style="justify-content:flex-start;">
+          <button class="btn" id="o1">同時にひく（順序を考えない）</button>
+          <button class="btn" id="o2">1枚ずつ順にひく（順序を考える）</button>
+        </div>
+        <div class="step" id="s5a"><b class="k">順序を考えない</b>：全部で10通り、2枚とも奇数は(①,③)(①,⑤)(③,⑤)の3通り　→　<span class="frac"><span>3</span><span>10</span></span></div>
+        <div class="step" id="s5b"><b class="k">順序を考える</b>：全部で 5×4＝20通り、2枚とも奇数は 3×2＝6通り　→　<span class="frac"><span>6</span><span>20</span></span> ＝ <span class="frac"><span>3</span><span>10</span></span></div>
+        <div class="step" id="s5c" style="border-color:var(--yellow);"><b class="k">どちらでも同じ確率！</b><br>ただし、<b>全部の場合</b>と<b>起こる場合</b>を、<b>同じ数え方</b>でそろえること。（片方だけ順序を考えるとまちがい）</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 practice -->
+  <section class="slide">
+    <h2 class="disp">練習</h2>
+    <div class="qlist">
+      <div class="qrow" style="display:block;"><b>(1)</b>　大小2個のさいころを投げるとき、<b>目の和が6</b>になる確率は？<br><button class="btn sub" onclick="rev(this)">答えを見る</button><span class="ans2" style="display:none;"><b style="color:var(--yellow)">5/36</b>　（(1,5)(2,4)(3,3)(4,2)(5,1) の5通り）</span></div>
+      <div class="qrow" style="display:block;"><b>(2)</b>　大小2個のさいころを投げるとき、<b>2個とも偶数</b>の目が出る確率は？<br><button class="btn sub" onclick="rev(this)">答えを見る</button><span class="ans2" style="display:none;"><b style="color:var(--yellow)">1/4</b>　（3×3＝9通り、9/36）</span></div>
+      <div class="qrow" style="display:block;"><b>(3)</b>　①②③④の4枚のカードから同時に2枚ひくとき、<b>和が5</b>になる確率は？<br><button class="btn sub" onclick="rev(this)">答えを見る</button><span class="ans2" style="display:none;"><b style="color:var(--yellow)">1/3</b>　（全部で6通りのうち、(①,④)(②,③)の2通り）</span></div>
+      <div class="qrow" style="display:block;"><b>(4)</b>　①〜⑤の5枚のカードから同時に2枚ひくとき、<b>③をひく</b>確率は？<br><button class="btn sub" onclick="rev(this)">答えを見る</button><span class="ans2" style="display:none;"><b style="color:var(--yellow)">2/5</b>　（10通りのうち、③をふくむ組は4通り）</span></div>
+    </div>
+  </section>
+
+  <!-- 7 summary -->
+  <section class="slide">
+    <h2 class="disp">まとめ</h2>
+    <ul class="points">
+      <li><span class="mark yellow">①</span><span><b>さいころ2個</b>は、大小を<b>区別</b>して、表で <b style="color:var(--yellow)">36通り</b>。「目の和」だけで数えると、同様に確からしくない。</span></li>
+      <li><span class="mark cyan">②</span><span><b>カードを同時に2枚ひく</b>ときは、（ABとBAは同じ組）。<b>重なりをのぞいて</b>数える。5枚から2枚なら <b style="color:var(--yellow)">10通り</b>。</span></li>
+      <li><span class="mark pink">③</span><span>順序を考えて数えても、考えずに数えても、確率は同じ。ただし、全部の場合と起こる場合を<b>同じ数え方</b>でそろえる。</span></li>
+      <li><span class="mark orange">④</span><span>表や樹形図でもれ・重なりなく数え、<b>確率 ＝ 起こる場合の数 ÷ 全部の場合の数</b>。</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">◀</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">▶</button>
+  </div>
+</div>
+
+<script>
+function rev(b){b.style.display='none';b.parentNode.querySelector('.ans2').style.display='inline';}
+function fr(a,b){return '<span class="frac"><span>'+a+'</span><span>'+b+'</span></span>';}
+const svgns="http://www.w3.org/2000/svg";
+function el(t,a){const e=document.createElementNS(svgns,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+
+// ---- slide 2: dice table
+const DQ=[
+ {f:(a,b)=>a+b===7,n:6,txt:'目の和が7：(1,6)(2,5)(3,4)(4,3)(5,2)(6,1)の <b class="p">6通り</b>　→　確率 '+fr(6,36)+' ＝ '+fr(1,6)},
+ {f:(a,b)=>a+b>=10,n:6,txt:'目の和が10以上：(4,6)(5,5)(6,4)(5,6)(6,5)(6,6)の <b class="p">6通り</b>　→　確率 '+fr(6,36)+' ＝ '+fr(1,6)},
+ {f:(a,b)=>a===b,n:6,txt:'同じ目：(1,1)(2,2)…(6,6)の <b class="p">6通り</b>　→　確率 '+fr(6,36)+' ＝ '+fr(1,6)},
+ {f:(a,b)=>a*b%2===1,n:9,txt:'目の積が奇数（2個とも奇数）：3×3＝ <b class="p">9通り</b>　→　確率 '+fr(9,36)+' ＝ '+fr(1,4)},
+ {f:(a,b)=>a===1||b===1,n:11,txt:'少なくとも1個は1：<b class="p">11通り</b>（1行目の6マス＋1列目の残り5マス）　→　確率 '+fr(11,36)}];
+let dq=-1;
+function r2(){
+  let h='<tr><th>大＼小</th>'+[1,2,3,4,5,6].map(j=>'<th>'+j+'</th>').join('')+'</tr>';
+  for(let i=1;i<=6;i++){h+='<tr><th>'+i+'</th>';for(let j=1;j<=6;j++)h+='<td class="small '+(dq>=0&&DQ[dq].f(i,j)?'hit':'')+'">'+i+','+j+'</td>';h+='</tr>';}
+  document.getElementById('tbl2').innerHTML=h;
+  document.getElementById('ans2').innerHTML=dq>=0?DQ[dq].txt:'上のボタンで、条件に合うマスに色がつく。';
+}
+document.querySelectorAll('#s2 .qbtns button').forEach(b=>b.onclick=()=>{dq=+b.dataset.q;r2();});r2();
+
+// ---- slide 4/5 card tables
+const CL=['①','②','③','④','⑤'];
+function cardTable(id,mode,f){
+  let h='<tr><th></th>'+CL.map(c=>'<th>'+c+'</th>').join('')+'</tr>';
+  CL.forEach((a,i)=>{h+='<tr><th>'+a+'</th>';CL.forEach((b,j)=>{
+    let cls='small',t=a+b;
+    if(i===j){cls='x';t='×';}
+    else if(mode==='half'){ if(i<j){ if(f&&f(i+1,j+1))cls+=' hit'; } else {cls='small dup';} }
+    else {if(f&&f(i+1,j+1))cls+=' hit';}
+    h+='<td class="'+cls+'">'+t+'</td>';});h+='</tr>';});
+  document.getElementById(id).innerHTML=h;
+}
+const CQ=[
+ {f:(a,b)=>a%2===1&&b%2===1,txt:'2枚とも奇数：(①,③)(①,⑤)(③,⑤)の <b class="p">3通り</b>　→　確率 '+fr(3,10)},
+ {f:(a,b)=>a+b===6,txt:'数の和が6：(①,⑤)(②,④)の <b class="p">2通り</b>　→　確率 '+fr(2,10)+' ＝ '+fr(1,5)},
+ {f:(a,b)=>a%2===0||b%2===0,txt:'少なくとも1枚は偶数：<b class="p">7通り</b>　→　確率 '+fr(7,10)+'　（全部10通りから、「2枚とも奇数」の3通りをのぞいても求められる）'},
+ {f:(a,b)=>a===3||b===3,txt:'③をひく：(①,③)(②,③)(③,④)(③,⑤)の <b class="p">4通り</b>　→　確率 '+fr(4,10)+' ＝ '+fr(2,5)}];
+let cq=-1;
+function r4(){cardTable('tbl4','half',cq>=0?CQ[cq].f:null);document.getElementById('ans4').innerHTML=cq>=0?CQ[cq].txt:'上のボタンで、条件に合う組に色がつく。';}
+document.querySelectorAll('#s4 .qbtns button').forEach(b=>b.onclick=()=>{cq=+b.dataset.q;r4();});r4();
+let om=0;
+const odd2=(a,b)=>a%2===1&&b%2===1;
+function r5(){cardTable('tbl5',om===1?'half':'full',om?odd2:null);
+  document.getElementById('s5a').classList.toggle('show',om===1||om===3);
+  document.getElementById('s5b').classList.toggle('show',om===2||om===3);
+  document.getElementById('s5c').classList.toggle('show',om===3);}
+document.getElementById('o1').onclick=()=>{om=om===2?3:1;if(om===3){}r5();};
+document.getElementById('o2').onclick=()=>{om=om===1?3:2;r5();};
+r5();
+
+// ---- slide 3 sum simulator
+(function(){
+  const box=document.getElementById('sim3');const cats=[2,3,4,5,6,7,8,9,10,11,12];const th=cats.map(s=>(6-Math.abs(s-7))/36);
+  const S={n:0,c:cats.map(()=>0)};let auto=null;
+  box.innerHTML='<svg viewBox="0 0 600 300" style="width:100%;height:auto;max-height:42vh;"></svg><div style="display:flex;gap:.4em;flex-wrap:wrap;justify-content:center;margin-top:.4em;"><button class="btn sub" data-s="10">+10回</button><button class="btn sub" data-s="100">+100回</button><button class="btn sub" data-s="1000">+1000回</button><button class="btn sub" data-a="1">▶ 自動</button><button class="btn sub" data-s="0">リセット</button></div><div class="ansbox" style="min-height:1.6em;font-size:.9rem;color:var(--chalk-dim)"></div>';
+  const svg=box.querySelector('svg'),info=box.querySelector('.ansbox'),ab=box.querySelector('[data-a]');
+  function draw(){svg.innerHTML='';const L=46,R=8,T=14,B=48,W=600,H=300,pw=W-L-R,ph=H-T-B,k=cats.length,bw=pw/k*0.62,ym=0.2,Y=v=>T+ph*(1-Math.min(v,ym)/ym);
+    [0,.05,.1,.15,.2].forEach(v=>{svg.appendChild(el('line',{x1:L,x2:L+pw,y1:Y(v),y2:Y(v),stroke:'rgba(242,240,230,.15)'}));const t=el('text',{x:L-6,y:Y(v)+5,'text-anchor':'end',fill:'#a9b8a4','font-size':12});t.textContent=v;svg.appendChild(t);});
+    cats.forEach((c,i)=>{const cx=L+pw/k*(i+.5),v=S.n?S.c[i]/S.n:0;
+      svg.appendChild(el('rect',{x:cx-bw/2,y:Y(v),width:bw,height:T+ph-Y(v),fill:c===7?'#f4d35e':'#c9b45a',opacity:.85,rx:3}));
+      svg.appendChild(el('line',{x1:cx-bw/2-4,x2:cx+bw/2+4,y1:Y(th[i]),y2:Y(th[i]),stroke:'#7ec8e3','stroke-width':2.5,'stroke-dasharray':'5 3'}));
+      let t=el('text',{x:cx,y:T+ph+18,'text-anchor':'middle',fill:'#f2f0e6','font-size':14,'font-weight':700});t.textContent=c;svg.appendChild(t);
+      t=el('text',{x:cx,y:T+ph+36,'text-anchor':'middle',fill:'#f4d35e','font-size':11});t.textContent=S.n?v.toFixed(3):'';svg.appendChild(t);});
+    svg.appendChild(el('line',{x1:L,x2:L+pw,y1:T+ph,y2:T+ph,stroke:'#a9b8a4'}));
+    let t=el('text',{x:L-6,y:T+ph+18,'text-anchor':'end',fill:'#a9b8a4','font-size':11});t.textContent='目の和';svg.appendChild(t);
+    info.innerHTML='投げた回数：<b style="color:var(--chalk)">'+S.n+'</b>　／　棒＝相対度数、<span style="color:#7ec8e3">点線＝計算で求めた確率</span>';}
+  function add(m){for(let j=0;j<m;j++){const a=1+Math.floor(Math.random()*6),b=1+Math.floor(Math.random()*6);S.n++;S.c[a+b-2]++;}draw();}
+  function stop(){if(auto){clearInterval(auto);auto=null;}ab.textContent='▶ 自動';ab.classList.remove('on');}
+  box.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{const s=+b.dataset.s;if(s===0){stop();S.n=0;S.c=cats.map(()=>0);draw();}else add(s);});
+  ab.onclick=()=>{if(auto){stop();return;}ab.textContent='■ 停止';ab.classList.add('on');auto=setInterval(()=>{add(3);if(S.n>=10000)stop();},60);};
+  box.stop=stop;draw();window.simBox=box;
+})();
+
+const slides=[...document.querySelectorAll('.slide')];let idx=0;
+const dotsWrap=document.getElementById('dots');
+slides.forEach((s,i)=>{const d=document.createElement('span');if(i===0)d.classList.add('active');dotsWrap.appendChild(d);});
+function show(i){
+  idx=Math.max(0,Math.min(slides.length-1,i));window.simBox.stop();
+  slides.forEach((s,j)=>s.classList.toggle('active',j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active',j===idx));
+  document.getElementById('cnt').textContent=idx+1;
+}
+document.getElementById('prevBtn').addEventListener('click',()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click',()=>show(idx+1));
+window.addEventListener('keydown',e=>{if(e.key==='ArrowRight')show(idx+1);if(e.key==='ArrowLeft')show(idx-1);});
+show(0);
+</script>
+</body>
+</html>

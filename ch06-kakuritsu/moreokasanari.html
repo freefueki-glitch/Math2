@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>場合の数をもれや重なりなく数えよう</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.4rem, 3vw, 2.2rem); margin: 0 0 .7em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(46vw,460px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .6em; min-width: 260px; max-width: 400px; font-size: clamp(.9rem,1.2vw,1.02rem); }
+.caption{ max-width: 700px; text-align:center; color: var(--chalk-dim); font-size: clamp(.88rem,1.3vw,1.02rem); line-height:1.75; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 780px; text-align:left; font-size: clamp(.9rem,1.4vw,1.06rem); line-height:1.8; margin-bottom:.8em;
+}
+.proof2{ width:100%; max-width:520px; display:flex; flex-direction:column; gap:.15em; font-size: clamp(.86rem,1.3vw,1rem); }
+.proof2 .p-header{ font-weight:700; margin-bottom:.3em; }
+.proof2 .p-row{ display:flex; align-items:center; gap:.6em; flex-wrap:wrap; }
+.proof2 .p-label{ flex-shrink:0; width:3.4em; font-weight:700; color:var(--chalk-dim); }
+.proof2 .p-hyp{ background: rgba(126,200,227,0.18); border:1.5px solid var(--cyan); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-extra{ background: rgba(242,240,230,0.04); border:1.5px solid var(--rule); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-con{ background: rgba(244,151,108,0.18); border:1.5px solid var(--orange); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-arrowrow{ display:flex; align-items:center; gap:.8em; margin:.25em 0 .25em 1.7em; }
+.proof2 .p-arrow{ color:var(--yellow); font-size:1.2em; flex-shrink:0; }
+.proof2 .p-annot{ color:var(--chalk-dim); font-size:.85em; line-height:1.5; }
+.proof2 .p-annot b{ color:var(--yellow); }
+.proof2 .p-center{ margin-left:1.7em; font-weight:900; color:var(--chalk); }
+.vocab-row{ display:flex; gap:1em; flex-wrap:wrap; justify-content:center; max-width:780px; margin-bottom:.6em; }
+.vocab-card{ flex:1 1 200px; border-radius:10px; padding:.7em 1em; text-align:center; font-size: clamp(.85rem,1.3vw,1rem); }
+.vocab-card .vname{ font-weight:900; margin-bottom:.2em; }
+.vocab-card.va{ border:1.5px solid var(--yellow); color:var(--yellow); }
+.vocab-card.vb{ border:1.5px solid var(--cyan); color:var(--cyan); }
+.vocab-card.vc{ border:1.5px solid var(--pink); color:var(--pink); }
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.55em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(.95rem,1.6vw,1.15rem); line-height:1.55; padding: .35em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; z-index:10; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; z-index:10; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; z-index:10; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+
+
+.cap-top{ font-size:clamp(.95rem,1.6vw,1.2rem); margin:0 0 .6em; text-align:center; flex-shrink:0; line-height:1.7; }
+.cap-top b{ color:var(--yellow); }
+.bag{ border:2px solid var(--chalk-dim); border-radius:18px 18px 40px 40px; padding:.9em 1.1em; display:flex; flex-wrap:wrap; gap:.6em; justify-content:center; background:rgba(242,240,230,.04); position:relative; max-width:360px; }
+.bag .lbl{ position:absolute; top:-.85em; left:50%; transform:translateX(-50%); background:var(--board); padding:0 .6em; font-size:.85rem; color:var(--chalk-dim); white-space:nowrap; }
+.ball{ width:clamp(42px,6vw,62px); height:clamp(42px,6vw,62px); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:1.1rem; transition:all .3s; box-shadow:inset -5px -6px 10px rgba(0,0,0,.25); color:transparent; }
+.ball.red{ background:radial-gradient(circle at 35% 30%, #ff9a9a, #d8403f 60%); }
+.ball.white{ background:radial-gradient(circle at 35% 30%, #fff, #cfd3cf 70%); }
+.ball.num{ color:#222; }
+.ball.red.num{ color:#fff; }
+.ball.dim{ opacity:.25; }
+.ball.pick{ outline:3px solid var(--yellow); outline-offset:3px; }
+.chartwrap{ width:min(46vw,560px); min-width:300px; }
+.sm .ball{ width:36px; height:36px; }
+.two{ display:flex; gap:2.4vw; align-items:flex-start; justify-content:center; flex-wrap:wrap; width:100%; max-width:1050px; }
+.steps{ display:flex; flex-direction:column; gap:.6em; min-width:300px; max-width:520px; flex:1 1 320px; }
+.step{ border:1.5px solid var(--rule); border-radius:10px; padding:.6em .9em; font-size:clamp(.92rem,1.4vw,1.08rem); line-height:1.7; display:none; }
+.step.show{ display:block; }
+.step b.k{ color:var(--yellow); }
+.frac{ display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 .25em; line-height:1.25; font-family:'Yomogi',sans-serif; }
+.frac span:first-child{ border-bottom:2px solid currentColor; padding:0 .3em; }
+.btn{ background:none; border:1.5px solid var(--yellow); color:var(--yellow); border-radius:999px; padding:.4em 1.2em; font-family:inherit; font-size:.98rem; cursor:pointer; }
+.btn:hover{ background:rgba(244,211,94,.1); }
+.btn.on{ border-color:var(--yellow); color:var(--yellow); background:rgba(244,211,94,.12); }
+.btn.sub{ border-color:var(--chalk-dim); color:var(--chalk); }
+.formula{ border:2px solid var(--yellow); border-radius:12px; padding:.8em 1.4em; background:rgba(244,211,94,.07); font-size:clamp(1rem,1.9vw,1.4rem); text-align:center; line-height:1.9; margin:.4em 0 .8em; }
+.qrow{ display:flex; align-items:center; gap:.8em; flex-wrap:wrap; border:1.5px solid var(--rule); border-radius:10px; padding:.6em .9em; width:100%; max-width:780px; font-size:clamp(.95rem,1.6vw,1.15rem); }
+.qrow .ans{ margin-left:auto; color:var(--yellow); font-weight:900; visibility:hidden; }
+.qrow .ans.show{ visibility:visible; }
+.qlist{ display:flex; flex-direction:column; gap:.55em; width:100%; align-items:center; }
+.bad{ border-color:var(--pink)!important; }
+.tally{ display:grid; grid-template-columns:repeat(3,1fr); gap:.4em; text-align:center; width:100%; margin-top:.5em; }
+.tally div{ border:1.5px solid var(--rule); border-radius:8px; padding:.3em; font-size:.82rem; color:var(--chalk-dim); }
+.tally div b{ display:block; color:var(--chalk); font-size:1.4rem; font-family:'Yomogi',sans-serif; font-weight:400; }
+.tally div.rel b{ color:var(--yellow); }
+
+.treewrap{ width:min(92vw,820px); }
+.treewrap svg{ width:100%; height:auto; }
+#tree5{ max-height:44vh; }
+#tree3{ max-height:42vh; }
+.tbl{ border-collapse:collapse; font-size:clamp(.8rem,1.5vw,1.1rem); text-align:center; }
+.tbl th,.tbl td{ border:1.5px solid var(--rule); width:2.5em; height:2.2em; }
+.tbl th{ color:var(--chalk-dim); font-weight:500; background:rgba(242,240,230,.05); }
+.tbl td.hit{ background:rgba(244,211,94,.25); color:var(--yellow); font-weight:900; border-color:var(--yellow); }
+.tbl td.x{ color:var(--pink); background:rgba(239,157,176,.1); }
+.tbl td.dup{ color:var(--chalk-dim); text-decoration:line-through; background:rgba(239,157,176,.08); }
+.badge-ans{ display:inline-block; margin-top:.3em; color:var(--yellow); font-weight:900; font-size:1.15em; }
+table.sum{ border-collapse:collapse; width:100%; max-width:960px; font-size:clamp(.74rem,1.12vw,.9rem); }
+table.sum th,table.sum td{ border:1.5px solid var(--rule); padding:.3em .6em; text-align:left; vertical-align:top; line-height:1.6; }
+table.sum th{ background:rgba(242,240,230,.05); color:var(--yellow); font-weight:700; white-space:nowrap; }
+table.sum thead th{ color:var(--chalk-dim); font-weight:500; }
+.wrong{ border-left:3px solid var(--pink); }
+.wrong .w{ color:var(--pink); font-weight:700; }
+.tips{ display:grid; grid-template-columns:1fr 1fr; gap:.5em .8em; width:100%; max-width:960px; margin-top:.5em; }
+.tips div{ border:1.5px solid var(--rule); border-radius:10px; padding:.3em .7em; font-size:clamp(.74rem,1.12vw,.9rem); line-height:1.6; }
+.tips div b{ color:var(--yellow); }
+@media (max-width:700px){ .tips{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 場合の数と確率</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 10</div>
+
+  <!-- 1 -->
+  <section class="slide active">
+    <h2 class="disp">３時間目　場合の数を、もれや重なりがないように数えよう</h2>
+    <div class="definition-box" style="border-left-color:var(--cyan);"><b style="color:var(--cyan);">今日のめあて</b>：「全部で何通りあるか」を、<b>もれや重なりなく</b>数えられるようになろう。</div>
+    <div class="definition-box"><b>場合の数</b>：あることがらについて、起こりうる場合が全部で何通りあるかを表す数。</div>
+    <div class="cap-top"><b>問題</b>　コインを3回投げるとき、表と裏の出方は全部で何通りあるだろう？</div>
+    <div class="caption">頭の中だけで数えると、<b>もれ</b>（数え忘れ）や<b>重なり</b>（同じものを2回数える）が起こりやすい。<br>今日は、場合の数を<b>正しく数える方法</b>をいくつか学ぼう。</div>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide">
+    <h2 class="disp">もれ・重なりとは</h2>
+    <div class="two">
+      <div class="definition-box" style="border-left-color:var(--pink);max-width:430px;"><b style="color:var(--pink);">もれ</b><br>数えるべきものを、数え忘れること。<br><span style="color:var(--chalk-dim)">例：1個目の袋の球を調べたのに、2個目を調べ忘れた</span></div>
+      <div class="definition-box" style="border-left-color:var(--pink);max-width:430px;"><b style="color:var(--pink);">重なり</b><br>同じものを、2回以上数えてしまうこと。<br><span style="color:var(--chalk-dim)">例：「AとB」と「BとA」を別々に数えた</span></div>
+    </div>
+    <div class="definition-box" style="border-left-color:var(--yellow);"><b style="color:var(--yellow);">正しく数えるコツ</b>　①順序を決めて、きまりよく書く　②区別できるように記号をつける　③できた図や表で、もれ・重なりをチェックする</div>
+    <div class="caption">次のページから、<b>樹形図・表・書き出し</b>の3つの方法を使い分けよう。</div>
+  </section>
+
+  <!-- 3 tree coins -->
+  <section class="slide" id="s3">
+    <h2 class="disp">方法① 樹形図（コインを3回投げる）</h2>
+    <div class="cap-top">1回目、2回目、3回目と<b>順に枝分かれ</b>させて、すべての場合を書き出す図を<b>樹形図</b>という。</div>
+    <div class="treewrap"><svg id="tree3" viewBox="0 0 760 340"></svg></div>
+    <div style="display:flex;gap:.5em;flex-wrap:wrap;justify-content:center;margin-top:.5em;">
+      <button class="btn" id="t3a">全部で何通り？ 数える</button>
+      <button class="btn sub" id="t3b">「表がちょうど2回」を色づけ</button>
+      <button class="btn sub" id="t3r">もどす</button>
+    </div>
+    <div class="caption" id="t3cap">枝の先が、1つ1つの場合を表している。</div>
+  </section>
+
+  <!-- 4 table dice -->
+  <section class="slide" id="s4">
+    <h2 class="disp">方法② 表（さいころ2個）</h2>
+    <div class="cap-top">大小2個のさいころを投げるとき、<b>目の和が7になる場合</b>は何通り？</div>
+    <div class="two">
+      <div>
+        <table class="tbl" id="tbl4"></table>
+        <div style="text-align:center;font-size:.8rem;color:var(--chalk-dim);margin-top:.4em;">（たて：大きいさいころ　よこ：小さいさいころ　数字は目の和）</div>
+      </div>
+      <div class="steps" style="max-width:400px;">
+        <div class="step show"><b class="k">2つのものが組み合わさる</b>ときは、<b>表</b>が見やすい。たて×よこのマスが、全部の場合になる。</div>
+        <div class="step" id="s4a"><b class="k">全部の場合</b>：6 × 6 ＝ <b>36通り</b></div>
+        <div class="step" id="s4b"><b class="k">目の和が7</b>：色のついたマスは <b>6通り</b><br>（大,小）＝(1,6)(2,5)(3,4)(4,3)(5,2)(6,1)</div>
+        <div style="display:flex;gap:.5em;"><button class="btn" id="b4">次へ ▶</button><button class="btn sub" id="r4">もどす</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 tree cards -->
+  <section class="slide" id="s5">
+    <h2 class="disp">方法③ 順序を決めて書き出す（数字カード）</h2>
+    <div class="cap-top">1、2、3、4の数字を書いた4枚のカードから<b>2枚ひいて並べ</b>、2けたの整数をつくる。<br>全部で何通り？　そのうち<b>偶数</b>は何通り？</div>
+    <div class="treewrap"><svg id="tree5" viewBox="0 0 760 440"></svg></div>
+    <div style="display:flex;gap:.5em;flex-wrap:wrap;justify-content:center;margin-top:.5em;">
+      <button class="btn" id="t5a">全部で何通り？ 数える</button>
+      <button class="btn sub" id="t5b">偶数を色づけ</button>
+      <button class="btn sub" id="t5r">もどす</button>
+    </div>
+    <div class="caption" id="t5cap">十の位が1のとき、2のとき…と、<b>小さい順</b>にきまりよく並べると、もれや重なりを防げる。</div>
+  </section>
+
+  <!-- 6 choose 2 -->
+  <section class="slide" id="s6">
+    <h2 class="disp">方法④ 表で「選ぶだけ」のとき（重なりに注意）</h2>
+    <div class="cap-top">A、B、C、Dの4人から2人を選ぶ。次の2つの場合で、場合の数はちがう！</div>
+    <div class="two">
+      <div>
+        <table class="tbl" id="tbl6"></table>
+        <div style="text-align:center;font-size:.8rem;color:var(--chalk-dim);margin-top:.4em;">（たて：1人目　よこ：2人目　同じ人は選べない×）</div>
+      </div>
+      <div class="steps" style="max-width:420px;">
+        <div style="display:flex;gap:.5em;flex-wrap:wrap;">
+          <button class="btn" id="m1">会長と副会長を選ぶ</button>
+          <button class="btn" id="m2">2人を選ぶだけ</button>
+        </div>
+        <div class="step" id="s6a"><b class="k">会長と副会長</b>（役割が違う）<br>「A会長・B副会長」と「B会長・A副会長」は<b>別の場合</b>。<br>→ ×以外の全部で <b class="k">12通り</b></div>
+        <div class="step" id="s6b"><b class="k">2人を選ぶだけ</b>（順番は関係ない）<br>「AとB」と「BとA」は<b>同じ場合</b>。<br>→ 同じものを2回数えない（取り消し線）。残りは <b class="k">6通り</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 square -->
+  <section class="slide" id="s7">
+    <h2 class="disp">方法⑤ 図に線をひく（4チームの総当たり戦）</h2>
+    <div class="cap-top">A、B、C、Dの4チームが、どのチームとも<b>1回ずつ</b>試合をする（総当たり戦）。<br>試合は<b>全部で何試合</b>あるだろう？</div>
+    <div class="two">
+      <svg id="g7" viewBox="0 0 420 330" style="width:min(44vw,400px);min-width:280px;height:auto;"></svg>
+      <div class="steps" style="max-width:430px;">
+        <div class="step show"><b class="k">やり方</b>　チームを<b>正方形の4すみ</b>に書き、試合をするチーム同士を<b>線でむすぶ</b>。線1本が1試合。</div>
+        <div class="step" id="s7a"><b class="k" style="color:#7ec8e3">① AからB、C、Dへ</b>　<b>3本</b>（A対B、A対C、A対D）</div>
+        <div class="step" id="s7b"><b class="k" style="color:#ef9db0">② BからC、Dへ</b>　<b>2本</b>（B対C、B対D）<br><span style="color:var(--chalk-dim)">※ B対A は、①のA対Bと同じ試合なので、ひかない</span></div>
+        <div class="step" id="s7c"><b class="k" style="color:#f4d35e">③ CからDへ</b>　<b>1本</b>（C対D）</div>
+        <div class="step" id="s7d">全部で　3＋2＋1 ＝ <b class="k">6試合</b>　（正方形の辺4本＋対角線2本）</div>
+        <div style="display:flex;gap:.5em;"><button class="btn" id="b7">次へ ▶</button><button class="btn sub" id="r7">もどす</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 pairs lines -->
+  <section class="slide" id="s8">
+    <h2 class="disp">方法⑤ 図に線をひく（4人から2人組をつくる）</h2>
+    <div class="cap-top">A、B、C、Dの4人から<b>2人組</b>をつくる。何通りの組み合わせがあるだろう？<br><span style="color:var(--chalk-dim);font-size:.85em">（「AとB」と「BとA」は同じ組）</span></div>
+    <svg id="g8" viewBox="0 0 700 300" style="width:min(80vw,700px);height:auto;max-height:40vh;"></svg>
+    <div class="steps" style="max-width:860px;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:.5em;">
+      <div class="step" id="s8a"><b class="k">2人組 ＝ 2人をむすぶ線</b>。<b>Aから</b>B、C、Dへ線をひく。</div>
+      <div class="step" id="s8b"><b class="k" style="color:#ef9db0">次にBから</b>C、Dへ線をひく。（Aとはもうむすんだので、ひかない）</div>
+      <div class="step" id="s8c"><b class="k" style="color:#f4d35e">最後にCから</b>Dへ線をひく。　→　3＋2＋1 ＝ <b class="k">6通り</b></div>
+      <div class="step" id="s8d">5人から2人組なら？　4＋3＋2＋1 ＝ <b class="k">10通り</b>。先に進むほど、<b>新しくひく線は1本ずつ減る</b>。</div>
+      <div style="display:flex;gap:.5em;justify-content:center;grid-column:1/3;"><button class="btn" id="b8">次へ ▶</button><button class="btn sub" id="r8">もどす</button></div>
+    </div>
+  </section>
+
+  <!-- 9 mistakes -->
+  <section class="slide">
+    <h2 class="disp">ミスを見つけよう</h2>
+    <div class="qlist">
+      <div class="qrow wrong" style="display:block;">
+        <div><b>(1)</b>　大小2個のさいころで、目の和が5になる場合を書き出した。<br>（大,小）＝ (1,4)　(2,3)　(3,2)　→　<b>3通り</b></div>
+        <div style="margin-top:.4em;"><button class="btn sub" onclick="rev2(this)">まちがいを見る</button><span class="ans2" style="display:none;"><span class="w">もれ</span>：(4,1) を数え忘れている。正しくは <b style="color:var(--yellow)">4通り</b>。<br>→ 大の目を1,2,3,…と<b>順に</b>調べたり、<b>表</b>を使えばもれにくい。</span></div>
+      </div>
+      <div class="qrow wrong" style="display:block;">
+        <div><b>(2)</b>　A、B、Cの3人から2人を選ぶ。<br>AB、BA、AC、CA、BC、CB　→　<b>6通り</b></div>
+        <div style="margin-top:.4em;"><button class="btn sub" onclick="rev2(this)">まちがいを見る</button><span class="ans2" style="display:none;"><span class="w">重なり</span>：ABとBA、ACとCA、BCとCBは、それぞれ同じ選び方。正しくは <b style="color:var(--yellow)">3通り</b>。<br>→ 選ぶだけのときは、<b>同じ組を消す</b>か、A→B→Cの順に決めて書く。</span></div>
+      </div>
+      <div class="qrow wrong" style="display:block;">
+        <div><b>(3)</b>　コインを3回投げて「表が2回出る」場合を、<br>表表裏、表裏表　→　<b>2通り</b></div>
+        <div style="margin-top:.4em;"><button class="btn sub" onclick="rev2(this)">まちがいを見る</button><span class="ans2" style="display:none;"><span class="w">もれ</span>：裏表表 を数え忘れている。正しくは <b style="color:var(--yellow)">3通り</b>。<br>→ <b>樹形図</b>で全部書き出してから、条件に合うものに印をつけよう。</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 summary -->
+  <section class="slide">
+    <h2 class="disp">まとめ：どんなとき、どの数え方？</h2>
+    <table class="sum">
+      <thead><tr><th>方法</th><th>こんなときに使うとミスが減る</th><th>気をつけること</th></tr></thead>
+      <tr><th>樹形図</th><td>1回目、2回目、3回目…と<b>順に決めていく</b>とき<br>（コイン、じゃんけん、並べ方など）<br>全部で <b>10〜20通りくらいまで</b>の場合</td><td>枝を<b>きまった順</b>（小さい順など）に書く。枝の数 ＝ その段階の選び方の数</td></tr>
+      <tr><th>表</th><td><b>2つのもの</b>を組み合わせるとき<br>（さいころ2個、2つの数の和・積など）<br>場合の数が<b>多い</b>（36通りなど）とき</td><td>たて・よこの<b>意味</b>を決める。「選ぶだけ」のときは、<b>同じ組が重ならない</b>ようにする</td></tr>
+      <tr><th>図に線をひく</th><td>「<b>2つを組み合わせる</b>」ものを数えるとき<br>（総当たり戦の試合数、2人組のつくり方など）</td><td>点を並べて、<b>線1本＝1つの組</b>。1つの点からひいたら、次の点では<b>すでにひいた線をひかない</b>（3＋2＋1…）</td></tr>
+      <tr><th>書き出し</th><td>場合の数が<b>少ない</b>とき、<br>きまりよく並べられるとき</td><td><b>順序よく</b>書き、書いたものを見直す</td></tr>
+    </table>
+    <div class="tips">
+      <div><b>① 区別する</b>　同じものでも、A、Bや①②と<b>記号をつけて区別</b>する。</div>
+      <div><b>② 順序を決める</b>　小さい順・アルファベット順など、<b>きまりよく</b>数える。</div>
+      <div><b>③ 重なりに注意</b>　「選ぶだけ」のとき、<b>AB と BA は同じ</b>。</div>
+      <div><b>④ 見直す</b>　できた図や表の<b>全部の数</b>が、計算（6×6など）と合うか確かめる。</div>
+    </div>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">◀</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">▶</button>
+  </div>
+</div>
+
+<script>
+const svgns="http://www.w3.org/2000/svg";
+function el(t,a){const e=document.createElementNS(svgns,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+function rev2(b){b.style.display='none';b.parentNode.querySelector('.ans2').style.display='inline';}
+
+// ---------- generic tree: node={l:label,c:[children]}, drawn left to right
+function drawTree(svg,root,opt){
+  svg.innerHTML='';
+  const leaves=[];
+  (function walk(n,d,path){n.d=d;n.path=path.concat([n.l]);if(!n.c||!n.c.length){leaves.push(n);}else n.c.forEach(c=>walk(c,d+1,n.path));})(root,0,[]);
+  const depth=Math.max(...leaves.map(l=>l.d));
+  const W=760,rowH=opt.rowH,H=leaves.length*rowH+20,x0=50,colW=(W-x0-150)/depth;
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  leaves.forEach((l,i)=>l.y=10+rowH*(i+.5));
+  (function ys(n){if(n.c&&n.c.length){n.c.forEach(ys);n.y=(n.c[0].y+n.c[n.c.length-1].y)/2;}})(root);
+  const X=d=>x0+colW*d;
+  // headers
+  (function edges(n){(n.c||[]).forEach(c=>{svg.appendChild(el('line',{x1:X(n.d),y1:n.y,x2:X(c.d),y2:c.y,stroke:'rgba(242,240,230,.45)','stroke-width':2}));edges(c);});})(root);
+  (function nodes(n){
+    if(n.d>0){const g=el('g',{});g.appendChild(el('circle',{cx:X(n.d),cy:n.y,r:15,fill:'#16241b',stroke:'#f2f0e6','stroke-width':1.6}));
+      const t=el('text',{x:X(n.d),y:n.y+5.5,'text-anchor':'middle',fill:'#f2f0e6','font-size':16,'font-weight':700});t.textContent=n.l;g.appendChild(t);svg.appendChild(g);}
+    else svg.appendChild(el('circle',{cx:X(0),cy:n.y,r:5,fill:'#f2f0e6'}));
+    (n.c||[]).forEach(nodes);})(root);
+  leaves.forEach((l,i)=>{
+    const hit=opt.hit&&opt.hit(l);
+    const tx=X(depth)+30;
+    if(opt.numbered){const b=el('circle',{cx:tx+6,cy:l.y,r:12,fill:'none',stroke:'#7ec8e3','stroke-width':1.5});svg.appendChild(b);
+      const t=el('text',{x:tx+6,y:l.y+5,'text-anchor':'middle',fill:'#7ec8e3','font-size':14,'font-weight':700});t.textContent=i+1;svg.appendChild(t);}
+    const t=el('text',{x:tx+28,y:l.y+5.5,fill:hit?'#f4d35e':'#f2f0e6','font-size':17,'font-weight':hit?900:400});
+    t.textContent=opt.res(l)+(hit?'  ◀':'');svg.appendChild(t);
+    if(hit)svg.appendChild(el('rect',{x:tx+20,y:l.y-13,width:opt.hitW||130,height:26,rx:6,fill:'rgba(244,211,94,.15)',stroke:'#f4d35e'}));
+  });
+}
+function mk(l,c){return {l,c};}
+
+// ---------- slide 3
+const T3=()=>mk('',['表','裏'].map(a=>mk(a,['表','裏'].map(b=>mk(b,['表','裏'].map(c=>mk(c))))))); 
+let s3={num:false,hit:false};
+function r3(){drawTree(document.getElementById('tree3'),T3(),{rowH:38,heads:['1回目','2回目','3回目'],numbered:s3.num,res:l=>l.path.slice(1).join(''),hit:s3.hit?(l=>l.path.slice(1).filter(x=>x==='表').length===2):null,hitW:100});
+  document.getElementById('t3cap').innerHTML=s3.hit?'表がちょうど2回：<b style="color:var(--yellow)">3通り</b>　（全部で8通りのうち）':(s3.num?'全部で <b style="color:var(--yellow)">2×2×2 ＝ 8通り</b>。枝が2本ずつ、3回分に分かれている。':'枝の先が、1つ1つの場合を表している。');}
+document.getElementById('t3a').onclick=()=>{s3={num:true,hit:false};r3();};
+document.getElementById('t3b').onclick=()=>{s3={num:true,hit:true};r3();};
+document.getElementById('t3r').onclick=()=>{s3={num:false,hit:false};r3();};
+r3();
+
+// ---------- slide 4 dice table
+let st4=0;
+function r4(){
+  let h='<tr><th></th>'+[1,2,3,4,5,6].map(j=>'<th>'+j+'</th>').join('')+'</tr>';
+  for(let i=1;i<=6;i++){h+='<tr><th>'+i+'</th>';for(let j=1;j<=6;j++){h+='<td class="'+(st4>=2&&i+j===7?'hit':'')+'">'+(i+j)+'</td>';}h+='</tr>';}
+  document.getElementById('tbl4').innerHTML=h;
+  document.getElementById('s4a').classList.toggle('show',st4>=1);document.getElementById('s4b').classList.toggle('show',st4>=2);
+  document.getElementById('b4').style.display=st4>=2?'none':'';
+}
+document.getElementById('b4').onclick=()=>{st4++;r4();};document.getElementById('r4').onclick=()=>{st4=0;r4();};r4();
+
+// ---------- slide 5 cards
+const T5=()=>mk('',[1,2,3,4].map(a=>mk(a,[1,2,3,4].filter(b=>b!==a).map(b=>mk(b)))));
+let s5={num:false,hit:false};
+function r5(){drawTree(document.getElementById('tree5'),T5(),{rowH:28,heads:['十の位','一の位'],numbered:s5.num,res:l=>l.path.slice(1).join(''),hit:s5.hit?(l=>l.path[2]%2===0):null,hitW:70});
+  document.getElementById('t5cap').innerHTML=s5.hit?'偶数（一の位が2か4）：12，14，24，32，34，42 の <b style="color:var(--yellow)">6通り</b>':(s5.num?'全部で <b style="color:var(--yellow)">4×3 ＝ 12通り</b>。十の位は4通り、そのどれに対しても一の位は3通り。':'十の位が1のとき、2のとき…と、<b>小さい順</b>にきまりよく並べると、もれや重なりを防げる。');}
+document.getElementById('t5a').onclick=()=>{s5={num:true,hit:false};r5();};
+document.getElementById('t5b').onclick=()=>{s5={num:true,hit:true};r5();};
+document.getElementById('t5r').onclick=()=>{s5={num:false,hit:false};r5();};
+r5();
+
+// ---------- slide 6 choose
+let m=0;const P=['A','B','C','D'];
+function r6(){
+  let h='<tr><th></th>'+P.map(p=>'<th>'+p+'</th>').join('')+'</tr>';
+  P.forEach((a,i)=>{h+='<tr><th>'+a+'</th>';P.forEach((b,j)=>{
+    let cls='',txt=a+b;
+    if(i===j){cls='x';txt='×';}
+    else if(m===1)cls='hit';
+    else if(m===2)cls=i<j?'hit':'dup';
+    h+='<td class="'+cls+'">'+txt+'</td>';});h+='</tr>';});
+  document.getElementById('tbl6').innerHTML=h;
+  document.getElementById('s6a').classList.toggle('show',m===1);document.getElementById('s6b').classList.toggle('show',m===2);
+}
+document.getElementById('m1').onclick=()=>{m=1;r6();};document.getElementById('m2').onclick=()=>{m=2;r6();};r6();
+
+// ---------- slides 7, 8 line diagrams
+function lineFig(svg,pts,steps,stepN,arcs){
+  svg.innerHTML='';
+  const cols=['#7ec8e3','#ef9db0','#f4d35e'];
+  steps.forEach((grp,si)=>{ if(si<stepN) grp.forEach(([a,b])=>{
+    const p=pts[a],q=pts[b];
+    if(arcs){const mx=(p[0]+q[0])/2,h=-(Math.abs(q[0]-p[0])*0.62);
+      svg.appendChild(el('path',{d:'M '+p[0]+' '+p[1]+' Q '+mx+' '+(p[1]+h)+' '+q[0]+' '+p[1],fill:'none',stroke:cols[si],'stroke-width':3.5,'stroke-linecap':'round'}));}
+    else svg.appendChild(el('line',{x1:p[0],y1:p[1],x2:q[0],y2:q[1],stroke:cols[si],'stroke-width':3.5,'stroke-linecap':'round'}));
+  });});
+  Object.entries(pts).forEach(([n,p])=>{
+    svg.appendChild(el('circle',{cx:p[0],cy:p[1],r:19,fill:'#16241b',stroke:'#f2f0e6','stroke-width':2}));
+    const t=el('text',{x:p[0],y:p[1]+7,'text-anchor':'middle',fill:'#f2f0e6','font-size':20,'font-weight':700});t.textContent=n;svg.appendChild(t);});
+}
+const STEPS=[[['A','B'],['A','C'],['A','D']],[['B','C'],['B','D']],[['C','D']]];
+let st7=0,st8=0;
+function r7(){lineFig(document.getElementById('g7'),{A:[100,60],B:[320,60],C:[320,260],D:[100,260]},STEPS,st7,false);
+  ['a','b','c','d'].forEach((k,i)=>document.getElementById('s7'+k).classList.toggle('show',st7>=i+1));
+  document.getElementById('b7').style.display=st7>=4?'none':'';}
+function r8(){
+  const svg=document.getElementById('g8');lineFig(svg,{A:[90,260],B:[270,260],C:[450,260],D:[630,260]},STEPS,Math.min(st8,3),true);
+  ['a','b','c','d'].forEach((k,i)=>document.getElementById('s8'+k).classList.toggle('show',st8>=i+1));
+  document.getElementById('b8').style.display=st8>=4?'none':'';}
+document.getElementById('b7').onclick=()=>{st7++;r7();};document.getElementById('r7').onclick=()=>{st7=0;r7();};
+document.getElementById('b8').onclick=()=>{st8++;r8();};document.getElementById('r8').onclick=()=>{st8=0;r8();};
+r7();r8();
+
+const slides=[...document.querySelectorAll('.slide')];let idx=0;
+const dotsWrap=document.getElementById('dots');
+slides.forEach((s,i)=>{const d=document.createElement('span');if(i===0)d.classList.add('active');dotsWrap.appendChild(d);});
+function show(i){
+  idx=Math.max(0,Math.min(slides.length-1,i));
+  slides.forEach((s,j)=>s.classList.toggle('active',j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active',j===idx));
+  document.getElementById('cnt').textContent=idx+1;
+}
+document.getElementById('prevBtn').addEventListener('click',()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click',()=>show(idx+1));
+window.addEventListener('keydown',e=>{if(e.key==='ArrowRight')show(idx+1);if(e.key==='ArrowLeft')show(idx-1);});
+show(0);
+</script>
+</body>
+</html>

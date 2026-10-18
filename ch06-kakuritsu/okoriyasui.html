@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>起こりやすいのは？</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board: #16241b;
+  --board2: #1e3226;
+  --chalk: #f2f0e6;
+  --chalk-dim: #a9b8a4;
+  --cyan: #7ec8e3;
+  --pink: #ef9db0;
+  --yellow: #f4d35e;
+  --orange: #f4976c;
+  --rule: rgba(242,240,230,0.18);
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background: radial-gradient(ellipse at 50% 0%, var(--board2), var(--board) 70%);
+  color: var(--chalk);
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  overflow:hidden;
+}
+.deck{ position:relative; width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
+.slide{
+  position:absolute; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:flex-start; padding: 9vh 5vw 15vh;
+  opacity:0; transition: opacity .35s ease;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin; scrollbar-color: var(--chalk-dim) transparent;
+}
+.slide::-webkit-scrollbar{ width:8px; }
+.slide::-webkit-scrollbar-thumb{ background: var(--chalk-dim); border-radius:8px; }
+.slide::-webkit-scrollbar-track{ background: transparent; }
+.slide.active{ display:flex; opacity:1; }
+h1.disp, h2.disp{ font-family:'Yomogi', sans-serif; font-weight:400; color: var(--chalk); margin:0; letter-spacing:.02em; }
+h2.disp{ font-size: clamp(1.4rem, 3vw, 2.2rem); margin: 0 0 .7em; text-align:center; flex-shrink:0; }
+.diagram-row{ display:flex; align-items:flex-start; justify-content:center; gap: 2.2vw; width:100%; flex-wrap:wrap; }
+svg.diagram{ width:min(46vw,460px); height:auto; }
+.controls{ display:flex; flex-direction:column; gap: .6em; min-width: 260px; max-width: 400px; font-size: clamp(.9rem,1.2vw,1.02rem); }
+.caption{ max-width: 700px; text-align:center; color: var(--chalk-dim); font-size: clamp(.88rem,1.3vw,1.02rem); line-height:1.75; margin-top:.6em; }
+.definition-box{
+  border-left: 3px solid var(--yellow); background: rgba(242,240,230,0.05); padding: .8em 1.2em;
+  border-radius: 4px; max-width: 780px; text-align:left; font-size: clamp(.9rem,1.4vw,1.06rem); line-height:1.8; margin-bottom:.8em;
+}
+.proof2{ width:100%; max-width:520px; display:flex; flex-direction:column; gap:.15em; font-size: clamp(.86rem,1.3vw,1rem); }
+.proof2 .p-header{ font-weight:700; margin-bottom:.3em; }
+.proof2 .p-row{ display:flex; align-items:center; gap:.6em; flex-wrap:wrap; }
+.proof2 .p-label{ flex-shrink:0; width:3.4em; font-weight:700; color:var(--chalk-dim); }
+.proof2 .p-hyp{ background: rgba(126,200,227,0.18); border:1.5px solid var(--cyan); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-extra{ background: rgba(242,240,230,0.04); border:1.5px solid var(--rule); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-con{ background: rgba(244,151,108,0.18); border:1.5px solid var(--orange); border-radius:6px; padding:.5em .8em; }
+.proof2 .p-arrowrow{ display:flex; align-items:center; gap:.8em; margin:.25em 0 .25em 1.7em; }
+.proof2 .p-arrow{ color:var(--yellow); font-size:1.2em; flex-shrink:0; }
+.proof2 .p-annot{ color:var(--chalk-dim); font-size:.85em; line-height:1.5; }
+.proof2 .p-annot b{ color:var(--yellow); }
+.proof2 .p-center{ margin-left:1.7em; font-weight:900; color:var(--chalk); }
+.vocab-row{ display:flex; gap:1em; flex-wrap:wrap; justify-content:center; max-width:780px; margin-bottom:.6em; }
+.vocab-card{ flex:1 1 200px; border-radius:10px; padding:.7em 1em; text-align:center; font-size: clamp(.85rem,1.3vw,1rem); }
+.vocab-card .vname{ font-weight:900; margin-bottom:.2em; }
+.vocab-card.va{ border:1.5px solid var(--yellow); color:var(--yellow); }
+.vocab-card.vb{ border:1.5px solid var(--cyan); color:var(--cyan); }
+.vocab-card.vc{ border:1.5px solid var(--pink); color:var(--pink); }
+ul.points{ list-style:none; padding:0; margin:0; width:100%; max-width:780px; display:flex; flex-direction:column; gap:.55em; }
+ul.points li{ display:flex; align-items:flex-start; gap:.7em; font-size: clamp(.95rem,1.6vw,1.15rem); line-height:1.55; padding: .35em .2em; border-bottom: 1px solid var(--rule); }
+ul.points li .mark{ font-family:'Yomogi',sans-serif; font-size:1.3em; flex-shrink:0; width:1.4em; text-align:center; }
+.mark.cyan{color:var(--cyan);} .mark.pink{color:var(--pink);} .mark.yellow{color:var(--yellow);} .mark.orange{color:var(--orange);}
+.nav{ position:absolute; bottom: 3vh; left:0; right:0; display:flex; align-items:center; justify-content:center; gap: 1.3em; }
+.nav button{ background: none; border: 1.5px solid var(--chalk-dim); color: var(--chalk); width:2.5em; height:2.5em; border-radius:50%; font-size:1.05em; cursor:pointer; }
+.nav button:hover{ border-color: var(--chalk); }
+.dots{ display:flex; gap:.5em; }
+.dots span{ width:8px; height:8px; border-radius:50%; background: var(--rule); }
+.dots span.active{ background: var(--yellow); }
+.counter{ position:absolute; top: 2.6vh; right: 3.5vw; color: var(--chalk-dim); font-size:.9rem; letter-spacing:.1em; z-index:10; }
+.unit-tag{ position:absolute; top:2.6vh; left:3.5vw; color:var(--chalk-dim); font-size:.82rem; letter-spacing:.13em; z-index:10; }
+.backnav{ position:absolute; top:5.4vh; left:3.5vw; display:flex; gap:.5em; z-index:10; }
+.backnav a{
+  font-size:.72rem; padding:.32em .7em; border-radius:999px;
+  border:1px solid var(--chalk-dim); color:var(--chalk-dim); text-decoration:none;
+  transition: all .2s ease;
+}
+.backnav a:hover{ border-color:var(--yellow); color:var(--yellow); }
+
+.cap-top{ font-size:clamp(.95rem,1.6vw,1.2rem); margin:0 0 .6em; text-align:center; flex-shrink:0; }
+.cap-top b{ color:var(--yellow); }
+.exlist{ list-style:none; padding:0; margin:0 0 .8em; width:100%; max-width:760px; display:flex; flex-direction:column; gap:.45em; }
+.exlist li{ display:flex; gap:.8em; align-items:center; font-size:clamp(1rem,1.8vw,1.25rem); padding:.45em .9em; border:1.5px solid var(--rule); border-radius:10px; }
+.exlist li .no{ font-family:'Yomogi',sans-serif; color:var(--yellow); font-size:1.3em; width:1.3em; text-align:center; flex-shrink:0; }
+.sim{ display:flex; gap:2.2vw; width:100%; max-width:1100px; justify-content:center; align-items:flex-start; flex-wrap:wrap; }
+.panel{ display:flex; flex-direction:column; align-items:center; gap:.6em; width:min(36vw,380px); min-width:290px; }
+.result{ width:100%; height:clamp(90px,15vh,140px); border:1.5px dashed var(--rule); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:clamp(2rem,5vw,3.4rem); }
+.result.hit{ border-color:var(--yellow); background:rgba(244,211,94,.08); }
+.pcard{ background:#f7f4ea; color:#222; border-radius:8px; padding:.1em .55em; font-weight:900; font-size:.8em; line-height:1.25; }
+.pcard.red{ color:#c0392b; }
+.coin{ width:1.7em; height:1.7em; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:.75em; background:#d9b44a; color:#4a3a10; border:3px solid #f4d35e; }
+.coin.ura{ background:#bfc7cc; color:#2c3a40; border-color:#e3e8ea; }
+.hitmark{ font-size:.38em; margin-left:.7em; color:var(--yellow); font-family:'Yomogi',sans-serif; }
+.counter-box{ width:100%; display:grid; grid-template-columns:1fr 1fr 1fr; gap:.4em; text-align:center; }
+.counter-box div{ border:1.5px solid var(--rule); border-radius:8px; padding:.35em .2em; font-size:.82rem; color:var(--chalk-dim); }
+.counter-box div b{ display:block; color:var(--chalk); font-size:1.5rem; font-family:'Yomogi',sans-serif; font-weight:400; }
+.counter-box div.rel b{ color:var(--yellow); }
+.btns{ display:flex; gap:.4em; flex-wrap:wrap; justify-content:center; }
+.btns button{ background:none; border:1.5px solid var(--chalk-dim); color:var(--chalk); border-radius:999px; padding:.4em .9em; font-size:.92rem; cursor:pointer; font-family:inherit; }
+.btns button:hover{ border-color:var(--yellow); color:var(--yellow); }
+.btns button.on{ border-color:var(--yellow); color:var(--yellow); background:rgba(244,211,94,.1); }
+.chartwrap{ width:min(46vw,560px); min-width:300px; }
+.chartwrap svg{ width:100%; height:auto; }
+.rec{ border-collapse:collapse; width:100%; margin-top:.5em; font-size:.8rem; text-align:center; }
+.rec th,.rec td{ border:1px solid var(--rule); padding:.2em .3em; }
+.rec th{ color:var(--chalk-dim); font-weight:500; }
+.rec td.v{ color:var(--yellow); }
+table.cmp{ border-collapse:collapse; width:100%; max-width:820px; font-size:clamp(.85rem,1.4vw,1.05rem); text-align:center; }
+table.cmp th,table.cmp td{ border:1.5px solid var(--rule); padding:.5em .6em; }
+table.cmp th{ color:var(--chalk-dim); font-weight:500; background:rgba(242,240,230,.04); }
+table.cmp td.l{ text-align:left; }
+table.cmp td.rel{ color:var(--yellow); font-weight:900; }
+.hidden{ visibility:hidden; }
+.revealbtn{ margin-top:.8em; background:none; border:1.5px solid var(--yellow); color:var(--yellow); border-radius:999px; padding:.4em 1.2em; font-family:inherit; font-size:1rem; cursor:pointer; }
+.revealbtn:hover{ background:rgba(244,211,94,.1); }
+
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="unit-tag">中学2年 数学 ／ 場合の数と確率</div>
+  <div class="backnav">
+    <a href="../index.html">← 単元一覧</a>
+    <a href="index.html">← 時間選択</a>
+  </div>
+  <div class="counter"><span id="cnt">1</span> / 9</div>
+
+  <!-- 1 -->
+  <section class="slide active">
+    <h2 class="disp">１時間目　起こりやすいのは？</h2>
+    <div class="cap-top">次の①〜⑤を<b>何度もくり返して</b>、起こった回数を数えてみよう。</div>
+    <ul class="exlist">
+      <li><span class="no">①</span>さいころを投げて、<b>１</b>が出る</li>
+      <li><span class="no">②</span>トランプの１〜１３（１種類13枚）から１枚ひいて、<b>１</b>が出る</li>
+      <li><span class="no">③</span>トランプ52枚（ジョーカーは抜く）から１枚ひいて、<b>１</b>が出る</li>
+      <li><span class="no">④</span>2人でじゃんけんを1回して、<b>あいこ（引き分け）</b>になる<span style="font-size:.8em;color:var(--chalk-dim)">（勝ち・負け・引き分けのどれか）</span></li>
+      <li><span class="no">⑤</span>コインを投げて、<b>表</b>が出る</li>
+    </ul>
+    <div class="definition-box" style="border-left-color:var(--cyan);"><b style="color:var(--cyan);">予想しよう</b>　①〜⑤を、起こりやすいと思う順に並べてみよう。<br>何度もくり返すと、どうなるだろう？</div>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide">
+    <h2 class="disp">実験のしかた と 用語</h2>
+    <div class="vocab-row">
+      <div class="vocab-card va"><div class="vname">試行回数</div>実験をくり返した回数</div>
+      <div class="vocab-card vb"><div class="vname">起こった回数</div>注目していることが起こった回数</div>
+      <div class="vocab-card vc"><div class="vname">相対度数</div>起こった回数 ÷ 試行回数</div>
+    </div>
+    <div class="definition-box"><b>相対度数</b>は、「全体のうち、どれくらいの割合で起こったか」を表す数。<br>たとえば、コインを10回投げて表が4回出たとき、相対度数は　4 ÷ 10 ＝ <b style="color:var(--yellow);">0.4</b></div>
+    <div class="caption">次のページから、コンピュータで①〜⑤をくり返す。<br>ボタンで回数を増やし、<b>相対度数がどう変わっていくか</b>に注目しよう。<br>（右のグラフは、横が試行回数、縦が相対度数）</div>
+  </section>
+
+  <!-- 3-7 -->
+  <section class="slide" data-ex="0"></section>
+  <section class="slide" data-ex="1"></section>
+  <section class="slide" data-ex="2"></section>
+  <section class="slide" data-ex="3"></section>
+  <section class="slide" data-ex="4"></section>
+
+  <!-- 8 -->
+  <section class="slide" id="cmpSlide">
+    <h2 class="disp">結果をくらべよう</h2>
+    <table class="cmp" id="cmpTable"></table>
+    <button class="revealbtn" id="revealBtn">相対度数が近づく値を見る</button>
+    <div class="caption" id="cmpNote">※ 実験をしていない項目は「—」になっています。③〜⑦ページに戻って回数を増やしてみよう。</div>
+  </section>
+
+  <!-- 9 -->
+  <section class="slide">
+    <h2 class="disp">まとめ</h2>
+    <ul class="points">
+      <li><span class="mark yellow">①</span><span>相対度数 ＝ 起こった回数 ÷ 試行回数</span></li>
+      <li><span class="mark cyan">②</span><span>試行回数が少ないうちは、相対度数は大きくばらつく。</span></li>
+      <li><span class="mark pink">③</span><span><b style="color:var(--yellow);">試行回数が増えれば増えるほど、相対度数は一定の値に近づく。</b></span></li>
+      <li><span class="mark orange">④</span><span>この一定の値は、そのことがらの「起こりやすさ」を表している。（この値を<b>確率</b>という。次の時間から考えていく）</span></li>
+    </ul>
+  </section>
+
+  <div class="nav">
+    <button id="prevBtn">◀</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn">▶</button>
+  </div>
+</div>
+
+<script>
+const svgns="http://www.w3.org/2000/svg";
+function el(t,a){const e=document.createElementNS(svgns,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const SUITS=[['♠',0],['♥',1],['♦',1],['♣',0]];
+const THR=[10,50,100,500,1000,5000,10000];
+const EX=[
+ {no:'①',title:'さいころを投げて、1が出る',ymax:0.5,ans:'1/6',ansv:1/6,
+  trial(){const v=1+Math.floor(Math.random()*6);return {hit:v===1,html:'<span class="pcard" style="font-size:1em;padding:.05em .4em;">'+['⚀','⚁','⚂','⚃','⚄','⚅'][v-1]+'</span>'};}},
+ {no:'②',title:'トランプ1〜13から1枚ひいて、1が出る',ymax:0.3,ans:'1/13',ansv:1/13,
+  trial(){const v=Math.floor(Math.random()*13);return {hit:v===0,html:'<span class="pcard">'+RANKS[v]+'</span>'};}},
+ {no:'③',title:'トランプ52枚から1枚ひいて、1（A）が出る',ymax:0.1,ans:'1/52',ansv:1/52,
+  trial(){const v=Math.floor(Math.random()*13),s=SUITS[Math.floor(Math.random()*4)];return {hit:v===0,html:'<span class="pcard'+(s[1]?' red':'')+'">'+s[0]+RANKS[v]+'</span>'};}},
+ {no:'④',title:'じゃんけんを1回して、あいこ（引き分け）になる',ymax:0.8,ans:'1/3',ansv:1/3,
+  trial(){const H=['✊','✌️','✋'];const a=Math.floor(Math.random()*3),b=Math.floor(Math.random()*3);const d=(b-a+3)%3;const r=d===0?'あいこ':(d===1?'勝ち':'負け');
+   return {hit:d===0,html:'<span style="font-size:.85em">'+H[a]+'<span style="font-size:.4em;color:var(--chalk-dim);margin:0 .5em">vs</span>'+H[b]+'</span><span style="font-size:.4em;margin-left:.7em;color:'+(d===0?'var(--yellow)':'var(--chalk)')+'">'+r+'</span>'};}},
+ {no:'⑤',title:'コインを投げて、表が出る',ymax:1,ans:'1/2',ansv:1/2,
+  trial(){const h=Math.random()<0.5;return {hit:h,html:'<span class="coin'+(h?'':' ura')+'">'+(h?'表':'裏')+'</span>'};}}
+];
+EX.forEach(e=>{e.n=0;e.k=0;e.hist=[];e.rec={};e.last=null;});
+
+function niceMax(n){const c=[10,20,50,100,200,500,1000,2000,5000,10000,20000,50000,100000];for(const x of c)if(n<=x)return x;return n;}
+function fmt(x){return x.toFixed(3);}
+
+function buildSim(sec,idx){
+  const e=EX[idx];
+  sec.innerHTML='<h2 class="disp">'+e.no+' '+e.title+'</h2>'+
+  '<div class="sim"><div class="panel">'+
+  '<div class="result" id="res'+idx+'"><span style="font-size:.3em;color:var(--chalk-dim)">ボタンをおそう</span></div>'+
+  '<div class="counter-box"><div>試行回数<b id="n'+idx+'">0</b></div><div>起こった回数<b id="k'+idx+'">0</b></div><div class="rel">相対度数<b id="r'+idx+'">—</b></div></div>'+
+  '<div class="btns" id="btn'+idx+'"><button data-s="1">+1回</button><button data-s="10">+10回</button><button data-s="100">+100回</button><button data-s="1000">+1000回</button><button data-s="auto" id="auto'+idx+'">▶ 自動</button><button data-s="reset">リセット</button></div>'+
+  '</div><div class="chartwrap"><svg id="ch'+idx+'" viewBox="0 0 560 330"></svg>'+
+  '<table class="rec" id="rec'+idx+'"></table></div></div>';
+  sec.querySelectorAll('.btns button').forEach(b=>b.addEventListener('click',()=>{
+    const s=b.dataset.s;
+    if(s==='reset'){stopAuto(idx);Object.assign(e,{n:0,k:0,hist:[],rec:{},last:null});render(idx);return;}
+    if(s==='auto'){toggleAuto(idx);return;}
+    step(idx,parseInt(s));
+  }));
+  render(idx);
+}
+const autos={};
+function stopAuto(i){if(autos[i]){clearInterval(autos[i]);autos[i]=null;}const b=document.getElementById('auto'+i);if(b){b.classList.remove('on');b.textContent='▶ 自動';}}
+function toggleAuto(i){if(autos[i]){stopAuto(i);return;}const b=document.getElementById('auto'+i);b.classList.add('on');b.textContent='■ 停止';autos[i]=setInterval(()=>step(i,3),60);}
+function step(i,m){
+  const e=EX[i];
+  for(let j=0;j<m;j++){
+    const t=e.trial();e.n++;if(t.hit)e.k++;e.last=t;
+    e.hist.push(e.k/e.n);
+    if(THR.includes(e.n))e.rec[e.n]=[e.k,e.k/e.n];
+  }
+  render(i);
+}
+function render(i){
+  const e=EX[i];
+  document.getElementById('n'+i).textContent=e.n;
+  document.getElementById('k'+i).textContent=e.k;
+  document.getElementById('r'+i).textContent=e.n?fmt(e.k/e.n):'—';
+  const res=document.getElementById('res'+i);
+  if(e.last){res.className='result'+(e.last.hit?' hit':'');res.innerHTML=e.last.html+(e.last.hit?'<span class="hitmark">★起こった！</span>':'');}
+  else{res.className='result';res.innerHTML='<span style="font-size:.3em;color:var(--chalk-dim)">ボタンをおそう</span>';}
+  drawChart(i);drawRec(i);
+}
+function drawRec(i){
+  const e=EX[i],t=document.getElementById('rec'+i);
+  const ks=THR.filter(x=>e.rec[x]);
+  if(!ks.length){t.innerHTML='<tr><th>記録</th><td style="color:var(--chalk-dim)">10・50・100・500・1000回…になると自動で記録されます</td></tr>';return;}
+  t.innerHTML='<tr><th>試行回数</th>'+ks.map(x=>'<td>'+x+'</td>').join('')+'</tr><tr><th>起こった回数</th>'+ks.map(x=>'<td>'+e.rec[x][0]+'</td>').join('')+'</tr><tr><th>相対度数</th>'+ks.map(x=>'<td class="v">'+fmt(e.rec[x][1])+'</td>').join('')+'</tr>';
+}
+function drawChart(i){
+  const e=EX[i],svg=document.getElementById('ch'+i);svg.innerHTML='';
+  const L=58,R=14,T=14,B=44,W=560,H=330,pw=W-L-R,ph=H-T-B;
+  const xm=niceMax(Math.max(e.n,10)),ym=e.ymax;
+  const X=n=>L+pw*n/xm,Y=v=>T+ph*(1-Math.min(v,ym)/ym);
+  svg.appendChild(el('clipPath',{id:'cp'+i})).appendChild(el('rect',{x:L,y:T,width:pw,height:ph}));
+  const yt=[0,ym/2,ym];
+  yt.forEach(v=>{
+    svg.appendChild(el('line',{x1:L,x2:L+pw,y1:Y(v),y2:Y(v),stroke:'rgba(242,240,230,.18)','stroke-width':1}));
+    const t=el('text',{x:L-8,y:Y(v)+5,'text-anchor':'end',fill:'#a9b8a4','font-size':14});t.textContent=(+v.toFixed(3));svg.appendChild(t);
+  });
+  [0,.25,.5,.75,1].forEach(f=>{
+    const n=xm*f;svg.appendChild(el('line',{x1:X(n),x2:X(n),y1:T+ph,y2:T+ph+5,stroke:'#a9b8a4'}));
+    const t=el('text',{x:X(n),y:T+ph+20,'text-anchor':'middle',fill:'#a9b8a4','font-size':14});t.textContent=Math.round(n);svg.appendChild(t);
+  });
+  svg.appendChild(el('line',{x1:L,x2:L,y1:T,y2:T+ph,stroke:'#a9b8a4'}));
+  svg.appendChild(el('line',{x1:L,x2:L+pw,y1:T+ph,y2:T+ph,stroke:'#a9b8a4'}));
+  let t=el('text',{x:L+pw/2,y:H-6,'text-anchor':'middle',fill:'#a9b8a4','font-size':14});t.textContent='試行回数';svg.appendChild(t);
+  t=el('text',{x:14,y:T+ph/2,'text-anchor':'middle',fill:'#a9b8a4','font-size':14,transform:'rotate(-90 14 '+(T+ph/2)+')'});t.textContent='相対度数';svg.appendChild(t);
+  if(e.hist.length){
+    const step=Math.max(1,Math.floor(e.hist.length/500));let d='';
+    for(let j=0;j<e.hist.length;j+=step){d+=(d?' L ':'M ')+X(j+1)+' '+Y(e.hist[j]);}
+    d+=' L '+X(e.hist.length)+' '+Y(e.hist[e.hist.length-1]);
+    svg.appendChild(el('path',{d,fill:'none',stroke:'#f4d35e','stroke-width':2,'clip-path':'url(#cp'+i+')','stroke-linejoin':'round'}));
+    svg.appendChild(el('circle',{cx:X(e.hist.length),cy:Y(e.hist[e.hist.length-1]),r:4,fill:'#f4d35e','clip-path':'url(#cp'+i+')'}));
+  }
+}
+document.querySelectorAll('section[data-ex]').forEach(s=>buildSim(s,+s.dataset.ex));
+
+let shown=false;
+function renderCmp(){
+  let h='<tr><th>ことがら</th><th>試行回数</th><th>起こった回数</th><th>相対度数</th>'+(shown?'<th>近づく値</th>':'')+'</tr>';
+  EX.forEach(e=>{h+='<tr><td class="l">'+e.no+' '+e.title+'</td><td>'+(e.n||'—')+'</td><td>'+(e.n?e.k:'—')+'</td><td class="rel">'+(e.n?fmt(e.k/e.n):'—')+'</td>'+(shown?'<td>約 '+e.ansv.toFixed(3)+'<br><span style="font-size:.8em;color:var(--chalk-dim)">（'+e.ans+'）</span></td>':'')+'</tr>';});
+  document.getElementById('cmpTable').innerHTML=h;
+  document.getElementById('revealBtn').textContent=shown?'近づく値をかくす':'相対度数が近づく値を見る';
+}
+document.getElementById('revealBtn').addEventListener('click',()=>{shown=!shown;renderCmp();});
+
+const slides=[...document.querySelectorAll('.slide')];let idx=0;
+const dotsWrap=document.getElementById('dots');
+slides.forEach((s,i)=>{const d=document.createElement('span');if(i===0)d.classList.add('active');dotsWrap.appendChild(d);});
+function show(i){
+  idx=Math.max(0,Math.min(slides.length-1,i));
+  Object.keys(autos).forEach(k=>stopAuto(k));
+  slides.forEach((s,j)=>s.classList.toggle('active',j===idx));
+  dotsWrap.querySelectorAll('span').forEach((d,j)=>d.classList.toggle('active',j===idx));
+  document.getElementById('cnt').textContent=idx+1;
+  if(slides[idx].id==='cmpSlide')renderCmp();
+}
+document.getElementById('prevBtn').addEventListener('click',()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click',()=>show(idx+1));
+window.addEventListener('keydown',e=>{if(e.key==='ArrowRight')show(idx+1);if(e.key==='ArrowLeft')show(idx-1);});
+show(0);
+</script>
+</body>
+</html>
